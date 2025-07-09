@@ -130,24 +130,23 @@
     }
 
     .book {
-      width: calc(10% - 25px);
-      min-width: 100px;
+      width: 100px;
       text-align: center;
-      font-size: 14px;
       color: #333;
+      font-size: 14px;
     }
 
-    @media (max-width: 768px) {
-      .book {
-        width: calc(33.33% - 25px);
-      }
-    }
-
-    .cover,
-    .flip-card {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 5 / 7;
+    .cover {
+      width: 100px;
+      height: 140px;
+      background-color: #8B4513;
+      border-radius: 4px;
+      box-shadow: 3px 6px 10px rgba(0, 0, 0, 0.4);
+      background-size: cover;
+      background-position: center;
+      margin-bottom: 8px;
+      transition: transform 0.2s;
+      display: block;
     }
 
     .cover:hover {
@@ -157,6 +156,12 @@
 
     .hidden {
       display: none !important;
+    }
+
+    .flip-card {
+      width: 100px;
+      height: 140px;
+      perspective: 1000px;
     }
 
     .flip-inner {
@@ -244,6 +249,45 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      /*Reduz largura e fonte no celular*/
+      .book {
+        width: 30%;
+        max-width: 90px;
+        font-size: 12px;
+      }
+      /*Reduz largura e fonte no celular*/
+      .flip-card {
+        width: 90px;
+        height: 126px;
+      }
+      /*Reduz também (se usada sem flip)*/
+      .cover {
+        width: 90px;
+        height: 126px;
+      }
+      /*Diminui fonte no verso do card*/
+      .book-title {
+        font-size: 10px;
+      }
+      /*Compacta tamanho do botão*/
+      .read-button {
+        font-size: 10px;
+        padding: 3px 6px;
+      }
+      /*Reduz o espaçamento lateral*/
+      .main {
+        padding: 15px;
+      }
+      /*Ajusta o botão "Filtros"*/
+      .toggle-button {
+        top: 10px;
+        left: 10px;
+        padding: 6px 10px;
+        font-size: 12px;
+      }
     }
   </style>
 </head>
