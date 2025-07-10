@@ -130,11 +130,13 @@
     }
 
     .book {
-      width: 100px;
+      flex: 0 0 calc(10% - 20px);
       text-align: center;
       color: #333;
       font-size: 14px;
+      max-width: 100px;
     }
+
 
     .flip-card,
     .cover {
@@ -244,9 +246,8 @@
 
     @media (max-width: 768px) {
       .book {
-        width: 30%;
-        max-width: 90px;
-        font-size: 12px;
+        flex: 0 0 calc(33.33% - 16px);
+        max-width: none;
       }
 
       .book-title {
