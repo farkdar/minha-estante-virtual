@@ -136,17 +136,14 @@
       font-size: 14px;
     }
 
+    .flip-card,
     .cover {
-      width: 100px;
-      height: 140px;
-      background-color: #8B4513;
+      width: 100%;
+      aspect-ratio: 5 / 7;
+      max-width: 100px;
       border-radius: 4px;
-      box-shadow: 3px 6px 10px rgba(0, 0, 0, 0.4);
       background-size: cover;
       background-position: center;
-      margin-bottom: 8px;
-      transition: transform 0.2s;
-      display: block;
     }
 
     .cover:hover {
@@ -156,12 +153,6 @@
 
     .hidden {
       display: none !important;
-    }
-
-    .flip-card {
-      width: 100px;
-      height: 140px;
-      perspective: 1000px;
     }
 
     .flip-inner {
@@ -251,36 +242,43 @@
       align-items: center;
     }
 
-    @media (max-width: p00x) {
+    @media (max-width: 768px) {
+
       /*Reduz largura e fonte no celular*/
       .book {
         width: 30%;
         max-width: 90px;
         font-size: 12px;
       }
-      /*Reduz largura e fonte no celular*/
+
+      /*Reduz tamanho físico do card*/
       .flip-card {
         width: 135px;
         height: 189px;
       }
+
       /*Reduz também (se usada sem flip)*/
       .cover {
         width: 135px;
         height: 189px;
       }
+
       /*Diminui fonte no verso do card*/
       .book-title {
         font-size: 10px;
       }
+
       /*Compacta tamanho do botão*/
       .read-button {
         font-size: 10px;
         padding: 3px 6px;
       }
+
       /*Reduz o espaçamento lateral*/
       .main {
         padding: 15px;
       }
+
       /*Ajusta o botão "Filtros"*/
       .toggle-button {
         top: 10px;
