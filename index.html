@@ -15,6 +15,7 @@
       height: 180px;
       object-fit: cover;
       border-radius: 4px;
+      background: #ddd;
     }
     .caption {
       text-align: center;
@@ -28,7 +29,7 @@
   <h1>Mini-estante com Covers Automáticos (inclui CBR)</h1>
   <div id="shelf"></div>
 
-  <!-- uncompress.js para RAR/CBR no browser -->
+  <!-- uncompress.js para ZIP/TAR/RAR(CBR) no browser -->
   <script src="https://unpkg.com/uncompress.js/dist/uncompress.min.js"></script>
   <script>
     const folderId       = "10A__4JOje3uuOc4-ywuwikswsgPiQf4R";
@@ -39,7 +40,22 @@
       return name.split('.').pop().toLowerCase();
     }
 
-    // 1) Busca recursiva de arquivos no Drive (inclui webContentLink e thumbnailLink)
+    // gera um fallback minimalista via canvas
+    function generateCoverDataUrl(title, w=120, h=180) {
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#ccc';
+      ctx.fillRect(0,0,w,h);
+      ctx.fillStyle = '#444';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Sem capa', w/2, h/2);
+      return c.toDataURL();
+    }
+
+    // 1) Busca recursiva de arquivos no Drive (inclui webContentLink & thumbnailLink)
     async function listFilesRecursively(parentId, path = "") {
       const url = [
         'https://www.googleapis.com/drive/v3/files',
@@ -53,7 +69,6 @@
       const res   = await fetch(url);
       const data  = await res.json();
       let results = [];
-
       for (const file of data.files || []) {
         if (file.mimeType === "application/vnd.google-apps.folder") {
           if (file.name.toLowerCase() !== capaFolderName) {
@@ -70,18 +85,13 @@
 
     // 2) Extrai a primeira imagem de um .cbr usando uncompress.js
     async function fetchFirstCbrCover(downloadUrl) {
-      try {
-        const res  = await fetch(downloadUrl);
-        const blob = await res.blob();
-        const entries = await uncompress(blob);
-        const imgEntry = entries.find(e => /\.(jpe?g|png|gif)$/i.test(e.filename));
-        if (!imgEntry) return null;
-        const imageBlob = new Blob([imgEntry.data], { type: 'image/jpeg' });
-        return URL.createObjectURL(imageBlob);
-      } catch (err) {
-        console.warn('Falha extraindo CBR:', err);
-        return null;
-      }
+      const res  = await fetch(downloadUrl);
+      const blob = await res.blob();
+      const entries = await uncompress(blob);
+      const imgEntry = entries.find(e => /\.(jpe?g|png|gif)$/i.test(e.filename));
+      if (!imgEntry) return null;
+      const imageBlob = new Blob([imgEntry.data], { type: 'image/jpeg' });
+      return URL.createObjectURL(imageBlob);
     }
 
     // 3) Renderiza a estante com lazy-load, thumbnail e CBR
@@ -95,14 +105,21 @@
         let coverUrl = null;
 
         if (ext === 'cbr') {
+          // sempre usa alt=media da API, via webContentLink
           const downloadUrl = file.webContentLink
             || `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${apiKey}`;
-          coverUrl = await fetchFirstCbrCover(downloadUrl);
+          try {
+            coverUrl = await fetchFirstCbrCover(downloadUrl);
+          } catch {
+            coverUrl = null;
+          }
         }
 
+        // se não extraiu CBR, tenta thumbnail do Drive
         if (!coverUrl) {
           coverUrl = file.thumbnailLink
-            || "https://via.placeholder.com/120x180?text=Sem+Capa";
+            // caso não exista thumbnailLink, usa canvas fallback
+            || generateCoverDataUrl(file.name);
         }
 
         const card = document.createElement("div");
