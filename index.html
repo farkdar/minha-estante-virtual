@@ -91,6 +91,11 @@
       width: 1em;
       text-align: center;
       cursor: pointer;
+      margin-left: auto;
+      /* empurra pro fim da linha */
+      margin-right: 0;
+      /* limpa margem anterior, se houver */
+
     }
 
     /* ==================================== */
@@ -163,13 +168,21 @@
     /* ==================================== */
     /*                BUSCA                */
     /* ==================================== */
+    /* define flex no pai direto */
+    .main>div {
+      display: flex;
+      margin-bottom: 20px;
+    }
+
+    /* empurra input para a direita */
     #searchInput {
-      width: 80%;
-      max-width: 400px;
+      width: 200px;
       padding: 6px 10px;
       font-size: 14px;
       border-radius: 6px;
+      margin-left: auto;
     }
+
 
     /* ==================================== */
     /*               ESTANTE               */
@@ -204,7 +217,7 @@
 
       /* duas colunas em telas pequenas */
       .book {
-        width: calc(50% - 25px);
+        width: calc(25% - 25px);
       }
 
       .shelf {
@@ -216,7 +229,7 @@
 
       /* uma coluna em telas muito estreitas */
       .book {
-        width: calc(100% - 25px);
+        width: calc(50% - 25px);
       }
 
       /* busca quase full-width */
@@ -430,44 +443,48 @@
         span.textContent = key;
         span.className = "tree-toggle";
 
-
         const fullPath = (parentPath ? parentPath + "/" : "") + key;
+        const hasChildren = Object.keys(tree[key]).length > 0;
+        let toggleIcon = null;
+
+        if (hasChildren) {
+          span.classList.add("has-children");
+          toggleIcon = document.createElement("span");
+          toggleIcon.className = "toggle-icon";
+          toggleIcon.textContent = "+";
+          span.appendChild(toggleIcon);
+        }
 
         span.onclick = (e) => {
           e.stopPropagation();
 
-          const fullPath = (parentPath ? parentPath + "/" : "") + key;
+          if (hasChildren) {
+            // fecha todos os irmãos abertos
+            const siblings = li.parentElement.querySelectorAll(":scope > li.open");
+            siblings.forEach(sib => {
+              if (sib !== li) {
+                sib.classList.remove("open");
+                const icon = sib.querySelector(".toggle-icon");
+                if (icon) icon.textContent = "+";
+              }
+            });
+
+            // alterna o atual
+            li.classList.toggle("open");
+            toggleIcon.textContent = li.classList.contains("open") ? "–" : "+";
+          }
+
+          // aplica o filtro
           filterBooks(fullPath);
 
-          document.querySelectorAll('.tree span').forEach(s => s.classList.remove("active-filter"));
+          // marca active
+          document.querySelectorAll(".tree-toggle.active-filter")
+            .forEach(s => s.classList.remove("active-filter"));
           span.classList.add("active-filter");
         };
 
-        // controle de expansão só via ícone
-        if (Object.keys(tree[key]).length > 0) {
-          span.classList.add("has-children");
-
-          const toggleIcon = document.createElement("span");
-          toggleIcon.className = "toggle-icon";
-          toggleIcon.textContent = "+";
-          toggleIcon.style.fontWeight = "bold";
-          toggleIcon.style.width = "12px";
-          toggleIcon.style.display = "inline-block";
-          toggleIcon.style.marginRight = "4px";
-
-          toggleIcon.onclick = (e) => {
-            e.stopPropagation();
-            li.classList.toggle("open");
-            toggleIcon.textContent = li.classList.contains("open") ? "–" : "+";
-          };
-
-          span.prepend(toggleIcon);
-        }
-
-
         li.appendChild(span);
 
-        const hasChildren = Object.keys(tree[key]).length > 0;
         if (hasChildren) {
           const subTree = createTreeElement(tree[key], fullPath);
           li.appendChild(subTree);
@@ -682,11 +699,20 @@
         const isToggleButton = toggleBtn.contains(event.target);
 
         if (!isClickInsideSidebar && !isToggleButton && sidebar.classList.contains("show")) {
+          // fecha a sidebar
           sidebar.classList.remove("show");
           sidebar.classList.add("sidebar-hidden");
-          toggleBtn.style.display = 'block'; // Mostra novamente o botão "Filtros"
+          toggleBtn.style.display = "block";
+
+          // fecha TODOS os subfiltros
+          document.querySelectorAll(".tree li.open").forEach(li => {
+            li.classList.remove("open");
+            const icon = li.querySelector(".toggle-icon");
+            if (icon) icon.textContent = "+";
+          });
         }
       });
+
 
       toggleBtn.addEventListener("click", () => {
         sidebar.classList.remove("sidebar-hidden");
