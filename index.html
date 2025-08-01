@@ -1,151 +1,697 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
   <meta charset="UTF-8">
-  <title>Mini-estante com Covers Automáticos (inclui CBR)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estante Virtual</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    #shelf {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 12px;
+    /* ==================================== */
+    /*           SKELETON LOADER           */
+    /* ==================================== */
+    @keyframes pulse {
+      0% {
+        background: #ddd;
+      }
+
+      50% {
+        background: #ccc;
+      }
+
+      100% {
+        background: #ddd;
+      }
     }
-    .card img {
-      width: 100%;
-      height: 180px;
-      object-fit: cover;
-      border-radius: 4px;
+
+    .skeleton {
       background: #ddd;
+      animation: pulse 1.5s infinite;
+      border-radius: 4px;
     }
-    .caption {
+
+    /* Garante altura e visibilidade dos skeletons */
+    .book.skeleton {
+      aspect-ratio: 5 / 7;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    /* ==================================== */
+    /*        ESTRUTURA DA ÁRVORE DE FILTROS */
+    /* ==================================== */
+
+    .tree {
+      display: block;
+    }
+
+    .tree>ul {
+      list-style: none;
+      padding-left: 0px;
+      margin-left: 0px;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .tree ul ul {
+      padding-left: 10px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease-out;
+    }
+
+    .tree li {
+      position: relative;
+    }
+
+
+    .tree-toggle {
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: white;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tree-toggle.active-filter {
+      background-color: rgba(255, 255, 255, 0.1);
+      outline: 2px solid #6f4e37;
+    }
+
+    .tree li.open>ul {
+      max-height: 1000px;
+      transition: max-height 0.4s ease-in;
+    }
+
+    .toggle-icon {
+      font-weight: bold;
+      width: 1em;
       text-align: center;
+      cursor: pointer;
+    }
+
+    /* ==================================== */
+    /*               LAYOUT                */
+    /* ==================================== */
+
+    body {
+      margin: 0;
+      font-family: 'Georgia', serif;
+      background: #f4efe9;
+      display: flex;
+    }
+
+    /*Estilo da barra lateral de filtros*/
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 260px;
+      height: auto;
+      max-height: 100vh;
+      background-color: rgba(62, 47, 28, 0.9);
+      /* mesma cor, mas com 90% opacidade */
+      color: white;
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.4);
+      padding: 20px;
+      z-index: 1500;
+      overflow-y: auto;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease-in-out;
+    }
+
+    /* Quando visível */
+    .sidebar.show {
+      transform: translateX(0);
+    }
+
+    /* Ocultar sidebar inicialmente */
+    .sidebar.sidebar-hidden {
+      transform: translateX(-100%);
+    }
+
+    .sidebar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .main {
+      flex: 1;
+      padding: 30px;
+      transition: margin 0.3s ease;
+    }
+
+    .main.shifted {
+      margin-left: 260px;
+    }
+
+    /* ==================================== */
+    /*                BUSCA                */
+    /* ==================================== */
+    #searchInput {
+      width: 80%;
+      max-width: 400px;
+      padding: 6px 10px;
+      font-size: 14px;
+      border-radius: 6px;
+    }
+
+    /* ==================================== */
+    /*               ESTANTE               */
+    /* ==================================== */
+
+    .shelf {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 25px;
+      justify-content: center;
+    }
+
+    .book {
+      width: calc(10% - 25px);
+      min-width: 100px;
+      text-align: center;
+      font-size: 14px;
+      color: #333;
+      /* transições suaves */
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+
+    .book.showing {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ——— Responsividade extra para celular ——— */
+    @media (max-width: 600px) {
+
+      /* duas colunas em telas pequenas */
+      .book {
+        width: calc(50% - 25px);
+      }
+
+      .shelf {
+        gap: 16px;
+      }
+    }
+
+    @media (max-width: 400px) {
+
+      /* uma coluna em telas muito estreitas */
+      .book {
+        width: calc(100% - 25px);
+      }
+
+      /* busca quase full-width */
+      #searchInput {
+        width: 90%;
+      }
+    }
+
+
+    /* ==================================== */
+    /*               FLIP CARD             */
+    /* ==================================== */
+
+
+    .flip-card {
+      width: 100%;
+      aspect-ratio: 5/7;
+      perspective: 1000px;
+    }
+
+    /*Importante para deixar elementos escondidos 
+    ao selecionar algum filtro*/
+    .hidden {
+      display: none !important;
+    }
+
+    .flip-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+    }
+
+    .flip-card:hover .flip-inner {
+      transform: rotateY(180deg);
+    }
+
+    .flip-front,
+    .flip-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 4px;
+      backface-visibility: hidden;
+      box-shadow: 3px 6px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .flip-front {
+      overflow: hidden;
+    }
+
+    .flip-front img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+
+    .no-cover {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      background: #d9cfc3;
+      padding: 6px;
+    }
+
+    .flip-back {
+      background: #fff;
+      color: #333;
+      transform: rotateY(180deg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 8px;
+      gap: 8px;
+      text-align: center;
+    }
+
+    .book-title {
       font-size: 12px;
-      margin-top: 4px;
-      word-break: break-word;
+      font-weight: bold;
+    }
+
+    .read-button {
+      font-size: 12px;
+      padding: 4px 8px;
+      background-color: #6f4e37;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      text-decoration: none;
+    }
+
+    /* Botão de abrir filtro */
+    .toggle-button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background-color: #6f4e37;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      z-index: 2000;
+      cursor: pointer;
     }
   </style>
 </head>
-<body>
-  <h1>Mini-estante com Covers Automáticos (inclui CBR)</h1>
-  <div id="shelf"></div>
 
-  <!-- uncompress.js para ZIP/TAR/RAR (CBR) -->
-  <script src="https://unpkg.com/uncompress.js/dist/uncompress.min.js"></script>
+<body>
+  <div class="sidebar sidebar-hidden" id="sidebar">
+    <div class="sidebar-header">
+      <h2>📚 Filtros</h2>
+      <button id="closeSidebar" class="close-btn">×</button>
+    </div>
+    <div class="tree" id="filterTree"></div>
+  </div>
+
+  <button id="toggleSidebar" class="toggle-button">📁 Filtros</button>
+
+
+  <div class="main">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <input type="text" id="searchInput" placeholder="Buscar livro por nome..."
+        style="width: 80%; max-width: 400px; padding: 6px 10px; font-size: 14px; border-radius: 6px;">
+    </div>
+    <div class="shelf" id="shelf"></div>
+  </div>
+
   <script>
-    const folderId       = "10A__4JOje3uuOc4-ywuwikswsgPiQf4R";
-    const apiKey         = "AIzaSyCSfROD8xDz5GvmvcRIt5X1FqIWk2Yb7xc";
+
+    function debounce(fn, delay) {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn.apply(this, args), delay);
+      };
+    }
+
+    /**
+ * Gera um cover simples com o título centralizado em um canvas e retorna um data-URL PNG.
+ */
+    function generateCoverDataUrl(title, width = 400, height = 600) {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+
+      // fundo gradiente
+      const grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, "#6f4e37");
+      grad.addColorStop(1, "#d9cfc3");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+
+      // texto do título
+      ctx.fillStyle = "#fff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      let fontSize = 40;
+      ctx.font = `${fontSize}px serif`;
+      while (ctx.measureText(title).width > width - 40) {
+        fontSize -= 2;
+        ctx.font = `${fontSize}px serif`;
+      }
+      ctx.fillText(title, width / 2, height / 2);
+
+      return canvas.toDataURL("image/png");
+    }
+
+
+    const folderId = "10A__4JOje3uuOc4-ywuwikswsgPiQf4R";
+    const apiKey = "AIzaSyCSfROD8xDz5GvmvcRIt5X1FqIWk2Yb7xc";
     const capaFolderName = "capas";
+    let capasDrive = {};
+
+    function stripExtension(name) {
+      return name.replace(/\.[^/.]+$/, "");
+    }
 
     function getExtension(name) {
       return name.split('.').pop().toLowerCase();
     }
 
-    // fallback via canvas
-    function generateCoverDataUrl(w=120, h=180) {
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      const ctx = c.getContext('2d');
-      ctx.fillStyle = '#ccc';
-      ctx.fillRect(0,0,w,h);
-      ctx.fillStyle = '#444';
-      ctx.font = '12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('Sem capa', w/2, h/2);
-      return c.toDataURL();
+    function buildTree(paths) {
+      const tree = {};
+      paths.forEach(path => {
+        const parts = path.split("/").filter(Boolean);
+        let current = tree;
+        for (let part of parts) {
+          if (!current[part]) current[part] = {};
+          current = current[part];
+        }
+      });
+      return tree;
     }
 
-    // 1) busca recursiva incluindo webContentLink
+    function createTreeElement(tree, parentPath = "") {
+      const ul = document.createElement("ul");
+
+      for (let key of Object.keys(tree).sort((a, b) => a.localeCompare(b, 'pt-BR'))) {
+        const li = document.createElement("li");
+        li.classList.add("tree-node");
+
+        const span = document.createElement("span");
+        span.textContent = key;
+        span.className = "tree-toggle";
+
+
+        const fullPath = (parentPath ? parentPath + "/" : "") + key;
+
+        span.onclick = (e) => {
+          e.stopPropagation();
+
+          const fullPath = (parentPath ? parentPath + "/" : "") + key;
+          filterBooks(fullPath);
+
+          document.querySelectorAll('.tree span').forEach(s => s.classList.remove("active-filter"));
+          span.classList.add("active-filter");
+        };
+
+        // controle de expansão só via ícone
+        if (Object.keys(tree[key]).length > 0) {
+          span.classList.add("has-children");
+
+          const toggleIcon = document.createElement("span");
+          toggleIcon.className = "toggle-icon";
+          toggleIcon.textContent = "+";
+          toggleIcon.style.fontWeight = "bold";
+          toggleIcon.style.width = "12px";
+          toggleIcon.style.display = "inline-block";
+          toggleIcon.style.marginRight = "4px";
+
+          toggleIcon.onclick = (e) => {
+            e.stopPropagation();
+            li.classList.toggle("open");
+            toggleIcon.textContent = li.classList.contains("open") ? "–" : "+";
+          };
+
+          span.prepend(toggleIcon);
+        }
+
+
+        li.appendChild(span);
+
+        const hasChildren = Object.keys(tree[key]).length > 0;
+        if (hasChildren) {
+          const subTree = createTreeElement(tree[key], fullPath);
+          li.appendChild(subTree);
+        }
+
+        ul.appendChild(li);
+      }
+
+      return ul;
+    }
+
+    function filterBooks(categoryPath) {
+      document.querySelectorAll('.book[data-path]').forEach(book => {
+        // só entra aqui se existir data-path
+        const bookPath = book.dataset.path.toLowerCase();
+
+        const category = categoryPath.toLowerCase();
+        const isMatch = bookPath === category || bookPath.startsWith(category + "/");
+        book.classList.toggle("hidden", !isMatch);
+      });
+
+      // Atualiza o destaque visual
+      document.querySelectorAll('.tree span').forEach(span => span.classList.remove("active-filter"));
+      document.querySelectorAll('.tree span').forEach(span => {
+        if (span.textContent === categoryPath.split("/").pop()) {
+          span.classList.add("active-filter");
+        }
+      });
+    }
+
+    function showSkeletons(count = 8) {
+      const shelf = document.getElementById('shelf');
+      shelf.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const sk = document.createElement('div');
+        sk.className = 'book skeleton';
+        shelf.appendChild(sk);
+      }
+    }
+
+
+    async function getFolderIdByName(parentId, folderName) {
+      const url = `https://www.googleapis.com/drive/v3/files?q='${parentId}'+in+parents+and+trashed=false+and+mimeType='application/vnd.google-apps.folder'&key=${apiKey}&fields=files(id,name)`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const folder = data.files.find(f => f.name.toLowerCase() === folderName.toLowerCase());
+      return folder ? folder.id : null;
+    }
+
+    async function listCapasRecursively(parentId) {
+      const url = `https://www.googleapis.com/drive/v3/files?q='${parentId}'+in+parents+and+trashed=false&key=${apiKey}&fields=files(id,name,mimeType)`;
+      const res = await fetch(url);
+      const data = await res.json();
+      let result = {};
+
+      for (const file of data.files) {
+        if (file.mimeType === "application/vnd.google-apps.folder") {
+          const subResults = await listCapasRecursively(file.id);
+          result = Object.assign(result, subResults);
+        } else {
+          const name = stripExtension(file.name).toLowerCase();
+          result[name] = `https://lh3.googleusercontent.com/d/${file.id}=w400-h600`;
+        }
+      }
+      return result;
+    }
+
     async function listFilesRecursively(parentId, path = "") {
-      const url = [
-        'https://www.googleapis.com/drive/v3/files',
-        `?q='${parentId}'+in+parents+and+trashed=false`,
-        `&key=${apiKey}`,
-        `&supportsAllDrives=true&includeItemsFromAllDrives=true`,
-        `&fields=files(` +
-          `id,name,mimeType,webViewLink,webContentLink,thumbnailLink` +
-        `)`
-      ].join('');
-      const res   = await fetch(url);
-      const data  = await res.json();
+      const url =
+        `https://www.googleapis.com/drive/v3/files` +
+        `?q='${parentId}'+in+parents+and+trashed=false` +
+        `&key=${apiKey}` +
+        `&fields=files(id,name,mimeType,webViewLink,thumbnailLink)`;
+
+      const res = await fetch(url);
+      const data = await res.json();
       let results = [];
+
       for (const file of data.files || []) {
         if (file.mimeType === "application/vnd.google-apps.folder") {
-          if (file.name.toLowerCase() !== capaFolderName) {
-            const sub = await listFilesRecursively(file.id, path + file.name + "/");
-            results = results.concat(sub);
-          }
+          if (file.name.toLowerCase() === capaFolderName) continue;
+          const sub = await listFilesRecursively(file.id, path + file.name + "/");
+          results = results.concat(sub);
         } else {
           file.path = path;
           results.push(file);
         }
       }
+
       return results;
     }
 
-    // 2) extrai primeira imagem de CBR
-    async function fetchFirstCbrCover(downloadUrl) {
-      const res  = await fetch(downloadUrl);
-      const blob = await res.blob();
-      const entries = await uncompress(blob);
-      const imgEntry = entries.find(e => /\.(jpe?g|png|gif)$/i.test(e.filename));
-      if (!imgEntry) return null;
-      const imageBlob = new Blob([imgEntry.data], { type: 'image/jpeg' });
-      return URL.createObjectURL(imageBlob);
-    }
 
-    // 3) monta shelf
-    async function renderShelf() {
+    async function renderBooks(defaultRoot = 'Livros') {
       const shelf = document.getElementById('shelf');
-      const files = await listFilesRecursively(folderId);
-      shelf.innerHTML = "";
+      const treeRoot = document.getElementById('filterTree');
+      showSkeletons();
+      treeRoot.innerHTML = '';
 
-      for (const file of files) {
-        const ext = getExtension(file.name);
-        let coverUrl = null;
-
-        if (ext === 'cbr') {
-          // **sempre** pela API do Drive com CORS
-          const downloadUrl = file.webContentLink
-            || `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${apiKey}`;
-          try {
-            coverUrl = await fetchFirstCbrCover(downloadUrl);
-          } catch {
-            coverUrl = null;
+      try {
+        // 1) Cache local
+        let files;
+        const cache = sessionStorage.getItem('estanteCache');
+        if (cache) {
+          const parsed = JSON.parse(cache);
+          files = parsed.files.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+          capasDrive = parsed.capas;
+        } else {
+          const capaFolderId = await getFolderIdByName(folderId, capaFolderName);
+          if (capaFolderId) {
+            capasDrive = await listCapasRecursively(capaFolderId);
           }
+          files = await listFilesRecursively(folderId);
+          files.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+          sessionStorage.setItem(
+            'estanteCache',
+            JSON.stringify({ files, capas: capasDrive })
+          );
         }
 
-        // thumbnail ou fallback
-        if (!coverUrl) {
-          coverUrl = file.thumbnailLink
-            ? file.thumbnailLink
-            : generateCoverDataUrl();
+        // 2) Renderização
+        shelf.innerHTML = '';
+        const allPaths = [];
+
+        for (const file of files) {
+          const name = stripExtension(file.name);
+          const nameNorm = name.toLowerCase();
+          const path = file.path.replace(/\/$/, '');
+          const normalized = path;
+          allPaths.push(normalized);
+
+          // Definição da URL da capa (manual, thumbnail, fallback gerado)
+          const manualCover = capasDrive[nameNorm];
+          const thumbCover = file.thumbnailLink;
+          const coverUrl = manualCover || thumbCover || generateCoverDataUrl(name);
+
+          // Criação do card
+          const bookDiv = document.createElement('div');
+          bookDiv.className = 'book';
+          bookDiv.dataset.path = normalized;
+
+          const flipCard = document.createElement('div'); flipCard.className = 'flip-card';
+          const flipInner = document.createElement('div'); flipInner.className = 'flip-inner';
+
+          // Frente
+          const front = document.createElement('div');
+          front.className = 'flip-front';
+          const img = document.createElement('img');
+          img.loading = 'lazy';
+          img.src = coverUrl;
+          img.alt = name;
+          front.appendChild(img);
+
+          // Verso
+          const back = document.createElement('div'); back.className = 'flip-back';
+          const bookTitle = document.createElement('div'); bookTitle.className = 'book-title';
+          bookTitle.textContent = name;
+          const readButton = document.createElement('a'); readButton.className = 'read-button';
+          readButton.href = file.webViewLink;
+          readButton.target = '_blank';
+          readButton.textContent = 'Ler';
+          back.append(bookTitle, readButton);
+
+          // Montagem final
+          flipInner.append(front, back);
+          flipCard.appendChild(flipInner);
+          bookDiv.appendChild(flipCard);
+          shelf.appendChild(bookDiv);
+          requestAnimationFrame(() => bookDiv.classList.add('showing'));
         }
 
-        const card = document.createElement("div");
-        card.className = "card";
+        // 3) Árvore de filtros
+        const treeData = buildTree(allPaths);
+        const treeStructure = createTreeElement(treeData);
+        const wrapperUl = document.createElement('ul');
+        const wrapperLi = document.createElement('li');
+        wrapperLi.classList.add('open');
+        wrapperLi.appendChild(treeStructure);
+        wrapperUl.appendChild(wrapperLi);
+        treeRoot.appendChild(wrapperUl);
 
-        const link = document.createElement("a");
-        link.href   = file.webViewLink;
-        link.target = "_blank";
+        // 4) Filtro inicial
+        filterBooks(defaultRoot);
 
-        const img = document.createElement("img");
-        img.loading = "lazy";
-        img.src     = coverUrl;
-        img.alt     = file.name;
-        link.appendChild(img);
-
-        const caption = document.createElement("div");
-        caption.className = "caption";
-        caption.textContent = file.name;
-
-        card.appendChild(link);
-        card.appendChild(caption);
-        shelf.appendChild(card);
+      } catch (err) {
+        console.error("Erro ao carregar estante:", err);
+        shelf.innerHTML = "<p>Erro ao carregar arquivos.</p>";
       }
     }
 
-    document.addEventListener("DOMContentLoaded", renderShelf);
+    document.addEventListener("DOMContentLoaded", () => {
+      renderBooks('Livros');
+      const toggleBtn = document.getElementById("toggleSidebar");
+      const sidebar = document.getElementById("sidebar");
+      const closeBtn = document.getElementById("closeSidebar");
+
+      toggleBtn.addEventListener("click", () => {
+        sidebar.classList.remove("sidebar-hidden");
+        sidebar.classList.add("show");
+        toggleBtn.style.display = 'none'; // Oculta o botão "Filtros"
+      });
+
+      closeBtn.addEventListener("click", () => {
+        sidebar.classList.remove("show");
+        sidebar.classList.add("sidebar-hidden");
+        toggleBtn.style.display = 'block'; // Mostra novamente o botão "Filtros"
+      });
+
+      //Busca textual
+      const searchInput = document.getElementById("searchInput");
+      searchInput.addEventListener("input", debounce(() => {
+        const query = searchInput.value.toLowerCase();
+        document.querySelectorAll('.book').forEach(book => {
+          const title = book.querySelector(".book-title")?.textContent.toLowerCase() || "";
+          book.classList.toggle("hidden", !title.includes(query));
+        });
+      }, 200));
+
+
+    });
+
+
+
   </script>
 </body>
+
 </html>
