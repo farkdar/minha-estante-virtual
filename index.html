@@ -573,8 +573,17 @@
         const cache = sessionStorage.getItem('estanteCache');
         if (cache) {
           const parsed = JSON.parse(cache);
-          files = parsed.files.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
-          capasDrive = parsed.capas;
+          const cacheValidoPorMs = 4 * 60 * 60 * 1000; // 24 horas
+          const expirado = Date.now() - parsed.timestamp > cacheValidoPorMs;
+
+          if (!expirado) {
+            files = parsed.files.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+            capasDrive = parsed.capas;
+          } else {
+            sessionStorage.removeItem('estanteCache');
+            // Continua e recarrega normalmente
+          }
+
         } else {
           const capaFolderId = await getFolderIdByName(folderId, capaFolderName);
           if (capaFolderId) {
@@ -584,8 +593,13 @@
           files.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
           sessionStorage.setItem(
             'estanteCache',
-            JSON.stringify({ files, capas: capasDrive })
+            JSON.stringify({
+              files,
+              capas: capasDrive,
+              timestamp: Date.now()
+            })
           );
+
         }
 
         // 2) Renderização
@@ -663,6 +677,16 @@
       const toggleBtn = document.getElementById("toggleSidebar");
       const sidebar = document.getElementById("sidebar");
       const closeBtn = document.getElementById("closeSidebar");
+      document.addEventListener("click", (event) => {
+        const isClickInsideSidebar = sidebar.contains(event.target);
+        const isToggleButton = toggleBtn.contains(event.target);
+
+        if (!isClickInsideSidebar && !isToggleButton && sidebar.classList.contains("show")) {
+          sidebar.classList.remove("show");
+          sidebar.classList.add("sidebar-hidden");
+          toggleBtn.style.display = 'block'; // Mostra novamente o botão "Filtros"
+        }
+      });
 
       toggleBtn.addEventListener("click", () => {
         sidebar.classList.remove("sidebar-hidden");
