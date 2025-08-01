@@ -261,7 +261,13 @@
       transform-style: preserve-3d;
     }
 
-    .flip-card:hover .flip-inner {
+    @media (hover: hover) {
+      .flip-card:hover .flip-inner {
+        transform: rotateY(180deg);
+      }
+    }
+
+    .flip-card.flipped .flip-inner {
       transform: rotateY(180deg);
     }
 
@@ -664,6 +670,14 @@
           requestAnimationFrame(() => bookDiv.classList.add('showing'));
         }
 
+        document.querySelectorAll('.flip-card').forEach(flipCard => {
+          flipCard.addEventListener('click', e => {
+            if (e.target.closest('.read-button')) return;
+            flipCard.classList.toggle('flipped');
+          });
+        });
+
+
         // 3) Árvore de filtros
         const treeData = buildTree(allPaths);
         const treeStructure = createTreeElement(treeData);
@@ -704,6 +718,7 @@
             const icon = li.querySelector(".toggle-icon");
             if (icon) icon.textContent = "+";
           });
+
         }
       });
 
@@ -729,6 +744,24 @@
           book.classList.toggle("hidden", !title.includes(query));
         });
       }, 200));
+      // flipa no clique/touch, exceto quando clicar no botão "Ler"
+      document.querySelectorAll('.flip-card').forEach(flipCard => {
+        flipCard.addEventListener('click', (e) => {
+          // se o clique for no link Ler, não altera o flip
+          if (e.target.closest('.read-button')) return;
+          flipCard.classList.toggle('flipped');
+        });
+      });
+      // ao clicar em qualquer lugar FORA de um flip-card, todos desviram
+      document.addEventListener('click', (e) => {
+        // se o clique for dentro de um flip-card ou no botão "Ler", ignora
+        if (e.target.closest('.flip-card') || e.target.closest('.read-button')) return;
+
+        // remove a classe 'flipped' de todos os cards virados
+        document.querySelectorAll('.flip-card.flipped')
+          .forEach(card => card.classList.remove('flipped'));
+      });
+
 
 
     });
