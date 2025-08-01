@@ -1,440 +1,65 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
   <meta charset="UTF-8">
-  <title>Estante Virtual</title>
+  <title>Mini-estante com Covers Automáticos (inclui CBR)</title>
   <style>
-    /*Estrutura da arvore de filtros*/
-    .tree {
-      display: block;
+    body { font-family: sans-serif; padding: 20px; }
+    #shelf {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
     }
-
-    .tree>ul {
-      list-style: none;
-      padding-left: 0px;
-      margin-left: 0px;
-      max-height: none;
-      overflow: visible;
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 4px;
     }
-
-    .tree ul ul {
-      padding-left: 10px;
-      margin-left: 0;
-      overflow: hidden;
-      max-height: 0;
-      transition: max-height 0.4s ease-out;
-    }
-
-    .tree li {
-      position: relative;
-      list-style-type: none;
-    }
-
-    .tree li::before {
-      content: "";
-    }
-
-    .tree-toggle {
-      cursor: pointer;
-      user-select: none;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: white;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .tree-toggle:not(.has-children)::before {
-      content: "";
-      display: inline-block;
-      width: 16px;
-      /* mesmo tamanho do ícone + */
-    }
-
-    .tree li span.active-filter {
-      background-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .tree li.open>ul {
-      max-height: 1000px;
-      /* valor grande para garantir expansão */
-      transition: max-height 0.4s ease-in;
-    }
-
-    /*Estilo do botão de filtro*/
-    .toggle-icon {
-      font-weight: bold;
-      width: 12px;
-      display: inline-block;
-      margin-right: 4px;
-      cursor: pointer;
-    }
-
-    /*Estilo geral dos textos do site*/
-    body {
-      font-family: 'Georgia', serif;
-      margin: 0;
-      display: flex;
-      background: #f4efe9;
-    }
-
-    /*Estilo da barra lateral de filtros*/
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 260px;
-      height: auto;
-      max-height: 100vh;
-      background-color: rgba(62, 47, 28, 0.9);
-      /* mesma cor, mas com 90% opacidade */
-      color: white;
-      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.4);
-      padding: 20px;
-      z-index: 1500;
-      overflow-y: auto;
-      transform: translateX(-100%);
-      transition: transform 0.3s ease-in-out;
-    }
-
-    /* Quando visível */
-    .sidebar.show {
-      transform: translateX(0);
-    }
-
-    /* Ocultar sidebar inicialmente */
-    .sidebar.sidebar-hidden {
-      display: block;
-      transform: translateX(-100%);
-    }
-
-    .sidebar h2 {
-      font-size: 18px;
-      margin-top: 0;
-      margin-bottom: 15px;
-    }
-
-    .main {
-      flex-grow: 1;
-      padding: 30px;
-    }
-
-    .shelf {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 25px;
-      justify-content: center;
-    }
-
-    .book {
-      flex: 0 0 calc(10% - 20px);
+    .caption {
       text-align: center;
-      color: #333;
-      font-size: 14px;
-      max-width: 100px;
-    }
-
-
-    .flip-card,
-    .cover {
-      width: 100%;
-      aspect-ratio: 5 / 7;
-      max-width: 100px;
-      border-radius: 4px;
-      background-size: cover;
-      background-position: center;
-    }
-
-    .cover:hover {
-      transform: scale(1.08);
-      box-shadow: 5px 8px 16px rgba(0, 0, 0, 0.5);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .flip-inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      transition: transform 0.6s;
-      transform-style: preserve-3d;
-    }
-
-    .flip-card:hover .flip-inner {
-      transform: rotateY(180deg);
-    }
-
-    .flip-front,
-    .flip-back {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      border-radius: 4px;
-      backface-visibility: hidden;
-      box-shadow: 3px 6px 10px rgba(0, 0, 0, 0.4);
-    }
-
-    .flip-front {
-      background-size: cover;
-      background-position: center;
-    }
-
-    .flip-back {
-      background: #fff;
-      color: #333;
-      transform: rotateY(180deg);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 8px;
-      gap: 8px;
-      text-align: center;
-    }
-
-    .book-title {
       font-size: 12px;
-      font-weight: bold;
-    }
-
-    .read-button {
-      font-size: 12px;
-      padding: 4px 8px;
-      background-color: #6f4e37;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      text-decoration: none;
-    }
-
-    /* Botão de abrir filtro */
-    .toggle-button {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      background-color: #6f4e37;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 14px;
-      z-index: 2000;
-      cursor: pointer;
-    }
-
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 14px;
-      background: transparent;
-      color: white;
-      font-size: 20px;
-      border: none;
-      cursor: pointer;
-    }
-
-    .sidebar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    @media (max-width: 768px) {
-      .book {
-        flex: 0 0 calc(33.33% - 16px);
-        max-width: none;
-      }
-
-      .book-title {
-        font-size: 10px;
-      }
-
-      .read-button {
-        font-size: 10px;
-        padding: 3px 6px;
-      }
-
-      .main {
-        padding: 15px;
-      }
-
-      .toggle-button {
-        top: 10px;
-        left: 10px;
-        padding: 6px 10px;
-        font-size: 12px;
-      }
+      margin-top: 4px;
+      word-break: break-word;
     }
   </style>
 </head>
-
 <body>
-  <div class="sidebar sidebar-hidden" id="sidebar">
-    <div class="sidebar-header">
-      <h2>📚 Filtros</h2>
-      <button id="closeSidebar" class="close-btn">×</button>
-    </div>
-    <div class="tree" id="filterTree"></div>
-  </div>
+  <h1>Mini-estante com Covers Automáticos (inclui CBR)</h1>
+  <div id="shelf"></div>
 
-  <button id="toggleSidebar" class="toggle-button">📁 Filtros</button>
-
-
-  <div class="main">
-    <div style="text-align: center; margin-bottom: 20px;">
-      <input type="text" id="searchInput" placeholder="Buscar livro por nome..."
-        style="width: 80%; max-width: 400px; padding: 6px 10px; font-size: 14px; border-radius: 6px;">
-    </div>
-    <div class="shelf" id="shelf"></div>
-  </div>
-
+  <!-- uncompress.js para RAR/CBR no browser -->
+  <script src="https://unpkg.com/uncompress.js/dist/uncompress.min.js"></script>
   <script>
-    const folderId = "10A__4JOje3uuOc4-ywuwikswsgPiQf4R";
-    const apiKey = "AIzaSyCSfROD8xDz5GvmvcRIt5X1FqIWk2Yb7xc";
+    const folderId       = "10A__4JOje3uuOc4-ywuwikswsgPiQf4R";
+    const apiKey         = "AIzaSyCSfROD8xDz5GvmvcRIt5X1FqIWk2Yb7xc";
     const capaFolderName = "capas";
-    let capasDrive = {};
-
-    function stripExtension(name) {
-      return name.replace(/\.[^/.]+$/, "");
-    }
 
     function getExtension(name) {
       return name.split('.').pop().toLowerCase();
     }
 
-    function buildTree(paths) {
-      const tree = {};
-      paths.forEach(path => {
-        const parts = path.split("/").filter(Boolean);
-        let current = tree;
-        for (let part of parts) {
-          if (!current[part]) current[part] = {};
-          current = current[part];
-        }
-      });
-      return tree;
-    }
-
-    function createTreeElement(tree, parentPath = "") {
-      const ul = document.createElement("ul");
-
-      for (let key of Object.keys(tree).sort((a, b) => a.localeCompare(b, 'pt-BR'))) {
-        const li = document.createElement("li");
-        li.classList.add("tree-node");
-
-        const span = document.createElement("span");
-        span.textContent = key;
-        span.className = "tree-toggle";
-
-
-        const fullPath = (parentPath ? parentPath + "/" : "") + key;
-
-        span.onclick = (e) => {
-          e.stopPropagation();
-
-          const fullPath = (parentPath ? parentPath + "/" : "") + key;
-          filterBooks(fullPath);
-
-          document.querySelectorAll('.tree span').forEach(s => s.classList.remove("active-filter"));
-          span.classList.add("active-filter");
-        };
-
-        // controle de expansão só via ícone
-        if (Object.keys(tree[key]).length > 0) {
-          span.classList.add("has-children");
-
-          const toggleIcon = document.createElement("span");
-          toggleIcon.className = "toggle-icon";
-          toggleIcon.textContent = "+";
-          toggleIcon.style.fontWeight = "bold";
-          toggleIcon.style.width = "12px";
-          toggleIcon.style.display = "inline-block";
-          toggleIcon.style.marginRight = "4px";
-
-          toggleIcon.onclick = (e) => {
-            e.stopPropagation();
-            li.classList.toggle("open");
-            toggleIcon.textContent = li.classList.contains("open") ? "–" : "+";
-          };
-
-          span.prepend(toggleIcon);
-        }
-
-
-        li.appendChild(span);
-
-        const hasChildren = Object.keys(tree[key]).length > 0;
-        if (hasChildren) {
-          const subTree = createTreeElement(tree[key], fullPath);
-          li.appendChild(subTree);
-        }
-
-        ul.appendChild(li);
-      }
-
-      return ul;
-    }
-
-    function filterBooks(categoryPath) {
-      document.querySelectorAll('.book').forEach(book => {
-        const bookPath = book.dataset.path.toLowerCase();
-        const category = categoryPath.toLowerCase();
-        const isMatch = bookPath === category || bookPath.startsWith(category + "/");
-        book.classList.toggle("hidden", !isMatch);
-      });
-
-      // Atualiza o destaque visual
-      document.querySelectorAll('.tree span').forEach(span => span.classList.remove("active-filter"));
-      document.querySelectorAll('.tree span').forEach(span => {
-        if (span.textContent === categoryPath.split("/").pop()) {
-          span.classList.add("active-filter");
-        }
-      });
-    }
-
-
-    async function getFolderIdByName(parentId, folderName) {
-      const url = `https://www.googleapis.com/drive/v3/files?q='${parentId}'+in+parents+and+trashed=false+and+mimeType='application/vnd.google-apps.folder'&key=${apiKey}&fields=files(id,name)`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const folder = data.files.find(f => f.name.toLowerCase() === folderName.toLowerCase());
-      return folder ? folder.id : null;
-    }
-
-    async function listCapasRecursively(parentId) {
-      const url = `https://www.googleapis.com/drive/v3/files?q='${parentId}'+in+parents+and+trashed=false&key=${apiKey}&fields=files(id,name,mimeType)`;
-      const res = await fetch(url);
-      const data = await res.json();
-      let result = {};
-
-      for (const file of data.files) {
-        if (file.mimeType === "application/vnd.google-apps.folder") {
-          const subResults = await listCapasRecursively(file.id);
-          result = Object.assign(result, subResults);
-        } else {
-          const name = stripExtension(file.name).toLowerCase();
-          result[name] = `https://lh3.googleusercontent.com/d/${file.id}=w400-h600`;
-        }
-      }
-      return result;
-    }
-
+    // 1) Busca recursiva de arquivos no Drive (inclui webContentLink e thumbnailLink)
     async function listFilesRecursively(parentId, path = "") {
-      const url = `https://www.googleapis.com/drive/v3/files?q='${parentId}'+in+parents+and+trashed=false&key=${apiKey}&fields=files(id,name,mimeType,webViewLink)`;
-      const res = await fetch(url);
-      const data = await res.json();
+      const url = [
+        'https://www.googleapis.com/drive/v3/files',
+        `?q='${parentId}'+in+parents+and+trashed=false`,
+        `&key=${apiKey}`,
+        `&supportsAllDrives=true&includeItemsFromAllDrives=true`,
+        `&fields=files(` +
+          `id,name,mimeType,webViewLink,webContentLink,thumbnailLink` +
+        `)`
+      ].join('');
+      const res   = await fetch(url);
+      const data  = await res.json();
       let results = [];
 
-      for (const file of data.files) {
+      for (const file of data.files || []) {
         if (file.mimeType === "application/vnd.google-apps.folder") {
-          if (file.name.toLowerCase() === capaFolderName) continue;
-          const subFiles = await listFilesRecursively(file.id, path + file.name + "/");
-          results = results.concat(subFiles);
+          if (file.name.toLowerCase() !== capaFolderName) {
+            const sub = await listFilesRecursively(file.id, path + file.name + "/");
+            results = results.concat(sub);
+          }
         } else {
           file.path = path;
           results.push(file);
@@ -443,145 +68,67 @@
       return results;
     }
 
-    async function renderBooks(defaultRoot = 'Livros') {
-      const shelf = document.getElementById('shelf');
-      const treeRoot = document.getElementById('filterTree');
-
+    // 2) Extrai a primeira imagem de um .cbr usando uncompress.js
+    async function fetchFirstCbrCover(downloadUrl) {
       try {
-        const capaFolderId = await getFolderIdByName(folderId, capaFolderName);
-        if (capaFolderId) {
-          capasDrive = await listCapasRecursively(capaFolderId);
-        }
-
-        const files = await listFilesRecursively(folderId);
-        const allPaths = [];
-
-        files.forEach(file => {
-          const name = stripExtension(file.name);
-          const ext = getExtension(file.name);
-          const path = file.path.replace(/\/$/, "");
-          const normalizedPath = path.replace(/\/$/, "");
-          allPaths.push(normalizedPath);
-
-          const bookDiv = document.createElement("div");
-          bookDiv.className = "book";
-          bookDiv.dataset.path = normalizedPath;
-
-          const flipCard = document.createElement("div");
-          flipCard.className = "flip-card";
-
-          const flipInner = document.createElement("div");
-          flipInner.className = "flip-inner";
-
-          const nomeNormalizado = name.toLowerCase();
-          const capaUrl = capasDrive[nomeNormalizado];
-          const icons = {
-            pdf: "https://cdn-icons-png.flaticon.com/512/337/337946.png",
-            docx: "https://cdn-icons-png.flaticon.com/512/281/281760.png",
-            txt: "https://cdn-icons-png.flaticon.com/512/3022/3022259.png",
-            epub: "https://cdn-icons-png.flaticon.com/512/888/888870.png",
-            pptx: "https://cdn-icons-png.flaticon.com/512/9068/9068645.png"
-
-          };
-
-          // Frente (capa)
-          const front = document.createElement("div");
-          front.className = "flip-front";
-
-          if (capaUrl) {
-            front.style.backgroundImage = `url('${capaUrl}')`;
-          } else {
-            front.style.backgroundColor = "#d9cfc3"; // tom de papel
-            front.style.color = "#333";
-            front.style.display = "flex";
-            front.style.justifyContent = "center";
-            front.style.alignItems = "center";
-            front.style.padding = "6px";
-            front.style.textAlign = "center";
-            front.style.fontSize = "11px";
-            front.textContent = file.name;
-          }
-
-
-
-          // Verso (título + botão)
-          const back = document.createElement("div");
-          back.className = "flip-back";
-
-          const bookTitle = document.createElement("div");
-          bookTitle.className = "book-title";
-          bookTitle.textContent = name;
-
-
-          const readButton = document.createElement("a");
-          readButton.className = "read-button";
-          readButton.href = file.webViewLink;
-          readButton.target = "_blank";
-          readButton.textContent = "Ler";
-
-          back.appendChild(bookTitle);
-          back.appendChild(readButton);
-
-          flipInner.appendChild(front);
-          flipInner.appendChild(back);
-          flipCard.appendChild(flipInner);
-          bookDiv.appendChild(flipCard);
-          shelf.appendChild(bookDiv);
-
-        });
-
-        const treeData = buildTree(allPaths);
-        const treeStructure = createTreeElement(treeData);
-
-        const wrapperUl = document.createElement("ul");
-        const wrapperLi = document.createElement("li");
-        wrapperLi.classList.add("open");
-        wrapperLi.appendChild(treeStructure);
-        wrapperUl.appendChild(wrapperLi);
-        treeRoot.appendChild(wrapperUl);
-        filterBooks("Livros");
-
-
+        const res  = await fetch(downloadUrl);
+        const blob = await res.blob();
+        const entries = await uncompress(blob);
+        const imgEntry = entries.find(e => /\.(jpe?g|png|gif)$/i.test(e.filename));
+        if (!imgEntry) return null;
+        const imageBlob = new Blob([imgEntry.data], { type: 'image/jpeg' });
+        return URL.createObjectURL(imageBlob);
       } catch (err) {
-        console.error("Erro ao carregar estante:", err);
-        shelf.innerHTML = "<p>Erro ao carregar arquivos.</p>";
+        console.warn('Falha extraindo CBR:', err);
+        return null;
       }
     }
 
-    renderBooks('Livros');
+    // 3) Renderiza a estante com lazy-load, thumbnail e CBR
+    async function renderShelf() {
+      const shelf = document.getElementById('shelf');
+      const files = await listFilesRecursively(folderId);
+      shelf.innerHTML = "";
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const toggleBtn = document.getElementById("toggleSidebar");
-      const sidebar = document.getElementById("sidebar");
-      const closeBtn = document.getElementById("closeSidebar");
+      for (const file of files) {
+        const ext = getExtension(file.name);
+        let coverUrl = null;
 
-      toggleBtn.addEventListener("click", () => {
-        sidebar.classList.remove("sidebar-hidden");
-        sidebar.classList.add("show");
-        toggleBtn.style.display = 'none'; // Oculta o botão "Filtros"
-      });
+        if (ext === 'cbr') {
+          const downloadUrl = file.webContentLink
+            || `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${apiKey}`;
+          coverUrl = await fetchFirstCbrCover(downloadUrl);
+        }
 
-      closeBtn.addEventListener("click", () => {
-        sidebar.classList.remove("show");
-        sidebar.classList.add("sidebar-hidden");
-        toggleBtn.style.display = 'block'; // Mostra novamente o botão "Filtros"
-      });
+        if (!coverUrl) {
+          coverUrl = file.thumbnailLink
+            || "https://via.placeholder.com/120x180?text=Sem+Capa";
+        }
 
-      //Busca textual
-      const searchInput = document.getElementById("searchInput");
-      searchInput.addEventListener("input", () => {
-        const query = searchInput.value.toLowerCase();
-        document.querySelectorAll('.book').forEach(book => {
-          const title = book.querySelector(".book-title")?.textContent.toLowerCase() || "";
-          book.classList.toggle("hidden", !title.includes(query));
-        });
-      });
+        const card = document.createElement("div");
+        card.className = "card";
 
-    });
+        const link = document.createElement("a");
+        link.href   = file.webViewLink;
+        link.target = "_blank";
 
+        const img = document.createElement("img");
+        img.loading = "lazy";
+        img.src     = coverUrl;
+        img.alt     = file.name;
+        link.appendChild(img);
 
+        const caption = document.createElement("div");
+        caption.className = "caption";
+        caption.textContent = file.name;
 
+        card.appendChild(link);
+        card.appendChild(caption);
+        shelf.appendChild(card);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", renderShelf);
   </script>
 </body>
-
 </html>
