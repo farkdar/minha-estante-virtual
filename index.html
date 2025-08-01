@@ -169,8 +169,10 @@
     /*                BUSCA                */
     /* ==================================== */
     /* define flex no pai direto */
-    .main>div {
+
+    .search-container {
       display: flex;
+      justify-content: flex-end;
       margin-bottom: 20px;
     }
 
@@ -230,11 +232,6 @@
       /* uma coluna em telas muito estreitas */
       .book {
         width: calc(50% - 25px);
-      }
-
-      /* busca quase full-width */
-      #searchInput {
-        width: 90%;
       }
     }
 
@@ -357,12 +354,12 @@
 
 
   <div class="main">
-    <div style="text-align: center; margin-bottom: 20px;">
-      <input type="text" id="searchInput" placeholder="Buscar livro por nome..."
-        style="width: 80%; max-width: 400px; padding: 6px 10px; font-size: 14px; border-radius: 6px;">
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Buscar livro por nome…">
     </div>
     <div class="shelf" id="shelf"></div>
   </div>
+
 
   <script>
 
@@ -415,10 +412,6 @@
       return name.replace(/\.[^/.]+$/, "");
     }
 
-    function getExtension(name) {
-      return name.split('.').pop().toLowerCase();
-    }
-
     function buildTree(paths) {
       const tree = {};
       paths.forEach(path => {
@@ -460,7 +453,8 @@
 
           if (hasChildren) {
             // fecha todos os irmãos abertos
-            const siblings = li.parentElement.querySelectorAll(":scope > li.open");
+            const siblings = Array.from(li.parentElement.children)
+              .filter(el => el.classList.contains('open'));
             siblings.forEach(sib => {
               if (sib !== li) {
                 sib.classList.remove("open");
