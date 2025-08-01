@@ -29,7 +29,7 @@
   <h1>Mini-estante com Covers Automáticos (inclui CBR)</h1>
   <div id="shelf"></div>
 
-  <!-- uncompress.js para ZIP/TAR/RAR(CBR) no browser -->
+  <!-- uncompress.js para ZIP/TAR/RAR (CBR) -->
   <script src="https://unpkg.com/uncompress.js/dist/uncompress.min.js"></script>
   <script>
     const folderId       = "10A__4JOje3uuOc4-ywuwikswsgPiQf4R";
@@ -40,8 +40,8 @@
       return name.split('.').pop().toLowerCase();
     }
 
-    // gera um fallback minimalista via canvas
-    function generateCoverDataUrl(title, w=120, h=180) {
+    // fallback via canvas
+    function generateCoverDataUrl(w=120, h=180) {
       const c = document.createElement('canvas');
       c.width = w; c.height = h;
       const ctx = c.getContext('2d');
@@ -55,7 +55,7 @@
       return c.toDataURL();
     }
 
-    // 1) Busca recursiva de arquivos no Drive (inclui webContentLink & thumbnailLink)
+    // 1) busca recursiva incluindo webContentLink
     async function listFilesRecursively(parentId, path = "") {
       const url = [
         'https://www.googleapis.com/drive/v3/files',
@@ -83,7 +83,7 @@
       return results;
     }
 
-    // 2) Extrai a primeira imagem de um .cbr usando uncompress.js
+    // 2) extrai primeira imagem de CBR
     async function fetchFirstCbrCover(downloadUrl) {
       const res  = await fetch(downloadUrl);
       const blob = await res.blob();
@@ -94,7 +94,7 @@
       return URL.createObjectURL(imageBlob);
     }
 
-    // 3) Renderiza a estante com lazy-load, thumbnail e CBR
+    // 3) monta shelf
     async function renderShelf() {
       const shelf = document.getElementById('shelf');
       const files = await listFilesRecursively(folderId);
@@ -105,7 +105,7 @@
         let coverUrl = null;
 
         if (ext === 'cbr') {
-          // sempre usa alt=media da API, via webContentLink
+          // **sempre** pela API do Drive com CORS
           const downloadUrl = file.webContentLink
             || `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${apiKey}`;
           try {
@@ -115,11 +115,11 @@
           }
         }
 
-        // se não extraiu CBR, tenta thumbnail do Drive
+        // thumbnail ou fallback
         if (!coverUrl) {
           coverUrl = file.thumbnailLink
-            // caso não exista thumbnailLink, usa canvas fallback
-            || generateCoverDataUrl(file.name);
+            ? file.thumbnailLink
+            : generateCoverDataUrl();
         }
 
         const card = document.createElement("div");
