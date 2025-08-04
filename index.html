@@ -6,9 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Estante Virtual</title>
   <style>
-    /* ==================================== */
-    /*           SKELETON LOADER           */
-    /* ==================================== */
+    /* ======================================================
+   CARREGAR ESQUELETO
+   — Animação “pulse” para estado de carregamento
+   — .skeleton: estilo base para elementos placeholder
+   — .book.skeleton: mantém proporção e visibilidade do esqueleto
+   ====================================================== */
+
     @keyframes pulse {
       0% {
         background: #ddd;
@@ -29,16 +33,21 @@
       border-radius: 4px;
     }
 
-    /* Garante altura e visibilidade dos skeletons */
     .book.skeleton {
       aspect-ratio: 5 / 7;
+      /* mantém proporção de capa de livro */
       opacity: 1 !important;
+      /* garante visibilidade */
       transform: none !important;
     }
 
-    /* ==================================== */
-    /*        ESTRUTURA DA ÁRVORE DE FILTROS */
-    /* ==================================== */
+
+    /* ======================================================
+   ESTRUTURA DA ÁRVORE DE FILTROS
+   — .tree: container principal de filtros
+   — .tree-toggle: alvos clicáveis para expandir/contrair
+   — .toggle-icon: ícone de seta alinhado à direita
+   ====================================================== */
 
     .tree {
       display: block;
@@ -46,15 +55,17 @@
 
     .tree>ul {
       list-style: none;
-      padding-left: 0px;
-      margin-left: 0px;
+      padding: 0;
+      margin: 0;
       max-height: none;
       overflow: visible;
     }
 
     .tree ul ul {
       padding-left: 10px;
+      /* recuo para sublistas */
       max-height: 0;
+      /* oculto por padrão */
       overflow: hidden;
       transition: max-height 0.4s ease-out;
     }
@@ -63,14 +74,13 @@
       position: relative;
     }
 
-
     .tree-toggle {
       cursor: pointer;
       user-select: none;
       display: flex;
       align-items: center;
       gap: 6px;
-      color: white;
+      color: #fff;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -79,10 +89,12 @@
     .tree-toggle.active-filter {
       background-color: rgba(255, 255, 255, 0.1);
       outline: 2px solid #6f4e37;
+      /* destaque de filtro ativo */
     }
 
     .tree li.open>ul {
       max-height: 1000px;
+      /* expande lista */
       transition: max-height 0.4s ease-in;
     }
 
@@ -92,50 +104,53 @@
       text-align: center;
       cursor: pointer;
       margin-left: auto;
-      /* empurra pro fim da linha */
+      /* empurra para o fim */
       margin-right: 0;
-      /* limpa margem anterior, se houver */
-
     }
 
-    /* ==================================== */
-    /*               LAYOUT                */
-    /* ==================================== */
+
+    /* ======================================================
+   LAYOUT & SIDEBAR
+   — body: layout flex com sidebar fixa
+   — .sidebar: painel lateral de filtros fora da tela
+   — .sidebar.show / .sidebar-hidden: mostra/esconde
+   — .sidebar-header & .close-btn: cabeçalho da sidebar
+   — .main / .main.shifted: área principal e estado deslocado
+   ====================================================== */
 
     body {
       margin: 0;
       font-family: 'Georgia', serif;
       background: #f4efe9;
       display: flex;
+      /* sidebar + conteúdo */
     }
 
-    /*Estilo da barra lateral de filtros*/
     .sidebar {
       position: fixed;
       top: 0;
       left: 0;
       width: 260px;
-      height: auto;
       max-height: 100vh;
       background-color: rgba(62, 47, 28, 0.9);
-      /* mesma cor, mas com 90% opacidade */
-      color: white;
+      color: #fff;
       box-shadow: 4px 0 12px rgba(0, 0, 0, 0.4);
       padding: 20px;
       z-index: 1500;
       overflow-y: auto;
       transform: translateX(-100%);
+      /* escondida à esquerda */
       transition: transform 0.3s ease-in-out;
     }
 
-    /* Quando visível */
     .sidebar.show {
       transform: translateX(0);
+      /* mostra sidebar */
     }
 
-    /* Ocultar sidebar inicialmente */
     .sidebar.sidebar-hidden {
       transform: translateX(-100%);
+      /* mantém escondida */
     }
 
     .sidebar-header {
@@ -145,12 +160,10 @@
       margin-bottom: 1rem;
     }
 
-
-
     .close-btn {
       background: none;
       border: none;
-      color: white;
+      color: #fff;
       font-size: 1.5rem;
       cursor: pointer;
     }
@@ -163,12 +176,15 @@
 
     .main.shifted {
       margin-left: 260px;
+      /* desloca ao abrir sidebar */
     }
 
-    /* ==================================== */
-    /*                BUSCA                */
-    /* ==================================== */
-    /* define flex no pai direto */
+
+    /* ======================================================
+   BUSCA
+   — .search-container: wrapper flex
+   — #searchInput: input alinhado à direita
+   ====================================================== */
 
     .search-container {
       display: flex;
@@ -176,19 +192,23 @@
       margin-bottom: 20px;
     }
 
-    /* empurra input para a direita */
     #searchInput {
       width: 200px;
       padding: 6px 10px;
       font-size: 14px;
       border-radius: 6px;
       margin-left: auto;
+      /* empurra para a direita */
     }
 
 
-    /* ==================================== */
-    /*               ESTANTE               */
-    /* ==================================== */
+    /* ======================================================
+   ESTANTE
+   — .shelf: container flex para livros
+   — .book: cartão individual com transições
+   — .book.showing: estado visível
+   — Breakpoints para celulares
+   ====================================================== */
 
     .shelf {
       display: flex;
@@ -203,8 +223,8 @@
       text-align: center;
       font-size: 14px;
       color: #333;
-      /* transições suaves */
       opacity: 0;
+      /* oculto até aparecer */
       transform: translateY(10px);
       transition: opacity 0.3s, transform 0.3s;
     }
@@ -214,10 +234,7 @@
       transform: none;
     }
 
-    /* ——— Responsividade extra para celular ——— */
     @media (max-width: 600px) {
-
-      /* duas colunas em telas pequenas */
       .book {
         width: calc(25% - 25px);
       }
@@ -228,27 +245,26 @@
     }
 
     @media (max-width: 400px) {
-
-      /* uma coluna em telas muito estreitas */
       .book {
         width: calc(50% - 25px);
       }
     }
 
 
-    /* ==================================== */
-    /*               FLIP CARD             */
-    /* ==================================== */
-
+    /* ======================================================
+   FLIP CARD
+   — .flip-card: contêiner com perspectiva 3D
+   — .flip-inner: contexto 3D e rotação
+   — .flip-front / .flip-back: faces escondidas
+   — .hidden: oculta itens filtrados
+   ====================================================== */
 
     .flip-card {
       width: 100%;
-      aspect-ratio: 5/7;
+      aspect-ratio: 5 / 7;
       perspective: 1000px;
     }
 
-    /*Importante para deixar elementos escondidos 
-    ao selecionar algum filtro*/
     .hidden {
       display: none !important;
     }
@@ -264,11 +280,13 @@
     @media (hover: hover) {
       .flip-card:hover .flip-inner {
         transform: rotateY(180deg);
+        /* rotação ao passar o mouse */
       }
     }
 
     .flip-card.flipped .flip-inner {
       transform: rotateY(180deg);
+      /* rotação por classe .flipped */
     }
 
     .flip-front,
@@ -291,7 +309,6 @@
       object-fit: cover;
       display: block;
     }
-
 
     .no-cover {
       display: flex;
@@ -324,19 +341,24 @@
       font-size: 12px;
       padding: 4px 8px;
       background-color: #6f4e37;
-      color: white;
+      color: #fff;
       border: none;
       border-radius: 4px;
       text-decoration: none;
     }
 
-    /* Botão de abrir filtro */
+
+    /* ======================================================
+   UTILITÁRIO & BOTÃO DE TOGGLE
+   — .toggle-button: botão fixo para abrir filtros
+   ====================================================== */
+
     .toggle-button {
       position: fixed;
       top: 20px;
       left: 20px;
       background-color: #6f4e37;
-      color: white;
+      color: #fff;
       border: none;
       padding: 8px 12px;
       border-radius: 6px;
@@ -348,166 +370,196 @@
 </head>
 
 <body>
+  <!-- Painel lateral de filtros, inicialmente oculto -->
   <div class="sidebar sidebar-hidden" id="sidebar">
+    <!-- Cabeçalho da sidebar com título e botão de fechar -->
     <div class="sidebar-header">
-      <h2>📚 Filtros</h2>
-      <button id="closeSidebar" class="close-btn">×</button>
+      <h2>📚 Filtros</h2> <!-- Título da seção de filtros -->
+      <button id="closeSidebar" class="close-btn">×</button> <!-- Botão para fechar a sidebar -->
     </div>
+
+    <!-- Container da árvore de filtros (itens dinâmicos inseridos via JavaScript) -->
     <div class="tree" id="filterTree"></div>
   </div>
 
+  <!-- Botão fixo para abrir/fechar a sidebar de filtros -->
   <button id="toggleSidebar" class="toggle-button">📁 Filtros</button>
 
-
+  <!-- Área principal de conteúdo -->
   <div class="main">
+    <!-- Wrapper flex para o campo de busca -->
     <div class="search-container">
       <input type="text" id="searchInput" placeholder="Buscar livro por nome…">
+      <!-- Input para digitar o termo de busca -->
     </div>
+
+    <!-- Container flexível que exibirá as capas dos livros -->
     <div class="shelf" id="shelf"></div>
   </div>
 
 
   <script>
-
+    // ===== Função debounce =====
+    // Atrasar a execução da função fn até que o usuário pare de disparar eventos por 'delay' ms
     function debounce(fn, delay) {
       let timeout;
       return (...args) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => fn.apply(this, args), delay);
+        clearTimeout(timeout);                     // Limpa qualquer timeout pendente
+        timeout = setTimeout(() => fn.apply(this, args), delay);  // Agenda nova chamada
       };
     }
 
-    /**
- * Gera um cover simples com o título centralizado em um canvas e retorna um data-URL PNG.
- */
+    // ===== Gera URL de dados para capa =====
+    // Cria dinamicamente uma imagem de capa (PNG) usando canvas e retorna como DataURL
     function generateCoverDataUrl(title, width = 400, height = 600) {
+      // Cria elemento canvas e define largura/altura
       const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext("2d");
 
-      // fundo gradiente
+      // Cria gradiente vertical de cor para fundo da capa
       const grad = ctx.createLinearGradient(0, 0, 0, height);
       grad.addColorStop(0, "#6f4e37");
       grad.addColorStop(1, "#d9cfc3");
       ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillRect(0, 0, width, height);            // Preenche fundo
 
-      // texto do título
+      // Configura estilo de texto para o título
       ctx.fillStyle = "#fff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       let fontSize = 40;
       ctx.font = `${fontSize}px serif`;
+
+      // Ajusta fonte para caber na largura, reduzindo até encaixar
       while (ctx.measureText(title).width > width - 40) {
         fontSize -= 2;
         ctx.font = `${fontSize}px serif`;
       }
+
+      // Desenha o texto centralizado
       ctx.fillText(title, width / 2, height / 2);
 
+      // Retorna DataURL em PNG
       return canvas.toDataURL("image/png");
     }
 
+    // ===== Configurações do Google Drive =====
+    const folderId = "10A__4JOje3uuOc4-ywuwikswsgPiQf4R";  // ID da pasta de capas
+    const apiKey = "AIzaSyCSfROD8xDz5GvmvcRIt5X1FqIWk2Yb7xc";     // Chave de API
+    const capaFolderName = "capas";                              // Nome da subpasta de capas
+    let capasDrive = {};                                          // Cache de metadados das capas
 
-    const folderId = "10A__4JOje3uuOc4-ywuwikswsgPiQf4R";
-    const apiKey = "AIzaSyCSfROD8xDz5GvmvcRIt5X1FqIWk2Yb7xc";
-    const capaFolderName = "capas";
-    let capasDrive = {};
-
+    // ===== Remove extensão de arquivo =====
     function stripExtension(name) {
-      return name.replace(/\.[^/.]+$/, "");
+      return name.replace(/\.[^/.]+$/, "");  // Remove tudo após o último ponto
     }
 
+    // ===== Constrói objeto de árvore a partir de paths =====
     function buildTree(paths) {
       const tree = {};
       paths.forEach(path => {
-        const parts = path.split("/").filter(Boolean);
+        const parts = path.split("/").filter(Boolean);  // Divide por '/' e remove vazios
         let current = tree;
-        for (let part of parts) {
-          if (!current[part]) current[part] = {};
-          current = current[part];
-        }
+        parts.forEach(part => {
+          if (!current[part]) current[part] = {};        // Cria nó se não existir
+          current = current[part];                       // Desce um nível
+        });
       });
       return tree;
     }
 
+    // ===== Cria elementos HTML para árvore de filtros =====
     function createTreeElement(tree, parentPath = "") {
       const ul = document.createElement("ul");
 
-      for (let key of Object.keys(tree).sort((a, b) => a.localeCompare(b, 'pt-BR'))) {
-        const li = document.createElement("li");
-        li.classList.add("tree-node");
+      // Ordena alfabeticamente considerando pt-BR
+      Object.keys(tree)
+        .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+        .forEach(key => {
+          const li = document.createElement("li");
+          li.classList.add("tree-node");
 
-        const span = document.createElement("span");
-        span.textContent = key;
-        span.className = "tree-toggle";
+          const span = document.createElement("span");
+          span.textContent = key;
+          span.className = "tree-toggle";
 
-        const fullPath = (parentPath ? parentPath + "/" : "") + key;
-        const hasChildren = Object.keys(tree[key]).length > 0;
-        let toggleIcon = null;
-
-        if (hasChildren) {
-          span.classList.add("has-children");
-          toggleIcon = document.createElement("span");
-          toggleIcon.className = "toggle-icon";
-          toggleIcon.textContent = "+";
-          span.appendChild(toggleIcon);
-        }
-
-        span.onclick = (e) => {
-          e.stopPropagation();
+          const fullPath = parentPath ? `${parentPath}/${key}` : key;
+          const hasChildren = Object.keys(tree[key]).length > 0;
+          let toggleIcon = null;
 
           if (hasChildren) {
-            // fecha todos os irmãos abertos
-            const siblings = Array.from(li.parentElement.children)
-              .filter(el => el.classList.contains('open'));
-            siblings.forEach(sib => {
-              if (sib !== li) {
-                sib.classList.remove("open");
-                const icon = sib.querySelector(".toggle-icon");
-                if (icon) icon.textContent = "+";
-              }
-            });
-
-            // alterna o atual
-            li.classList.toggle("open");
-            toggleIcon.textContent = li.classList.contains("open") ? "–" : "+";
+            // Marca nó com filhos e adiciona ícone
+            span.classList.add("has-children");
+            toggleIcon = document.createElement("span");
+            toggleIcon.className = "toggle-icon";
+            toggleIcon.textContent = "+";         // ícone para expandir
+            span.appendChild(toggleIcon);
           }
 
-          // aplica o filtro
-          filterBooks(fullPath);
+          // Evento de clique no filtro
+          span.onclick = e => {
+            e.stopPropagation();                    // Evita borbulhar para outros ítems
 
-          // marca active
-          document.querySelectorAll(".tree-toggle.active-filter")
-            .forEach(s => s.classList.remove("active-filter"));
-          span.classList.add("active-filter");
-        };
+            if (hasChildren) {
+              // Fecha outros nós abertos
+              Array.from(li.parentElement.children)
+                .filter(el => el.classList.contains('open'))
+                .forEach(sib => {
+                  if (sib !== li) {
+                    sib.classList.remove("open");
+                    const icon = sib.querySelector(".toggle-icon");
+                    if (icon) icon.textContent = "+";
+                  }
+                });
 
-        li.appendChild(span);
+              // Alterna estado do nó atual
+              li.classList.toggle("open");
+              toggleIcon.textContent = li.classList.contains("open") ? "–" : "+";
+            }
 
-        if (hasChildren) {
-          const subTree = createTreeElement(tree[key], fullPath);
-          li.appendChild(subTree);
-        }
+            // Aplica filtro de livros baseado no caminho completo
+            filterBooks(fullPath);
 
-        ul.appendChild(li);
-      }
+            // Atualiza classe active-filter
+            document.querySelectorAll(".tree-toggle.active-filter")
+              .forEach(s => s.classList.remove("active-filter"));
+            span.classList.add("active-filter");
+          };
+
+          li.appendChild(span);
+
+          if (hasChildren) {
+            // Chamada recursiva para filhos
+            const subTree = createTreeElement(tree[key], fullPath);
+            li.appendChild(subTree);
+          }
+
+          ul.appendChild(li);
+        });
 
       return ul;
     }
 
+    // ===== Filtra livros pelo caminho de categoria =====
     function filterBooks(categoryPath) {
+      // Percorre todos os elementos .book que possuem data-path
       document.querySelectorAll('.book[data-path]').forEach(book => {
-        // só entra aqui se existir data-path
-        const bookPath = book.dataset.path.toLowerCase();
+        const bookPath = book.dataset.path.toLowerCase();          // Caminho do livro (minusculas)
+        const category = categoryPath.toLowerCase();               // Categoria selecionada (minusculas)
 
-        const category = categoryPath.toLowerCase();
+        // Verifica se o livro pertence exatamente à categoria ou a um subdiretório
         const isMatch = bookPath === category || bookPath.startsWith(category + "/");
+
+        // Adiciona ou remove a classe 'hidden' conforme correspondência
         book.classList.toggle("hidden", !isMatch);
       });
 
-      // Atualiza o destaque visual
+      // Remove destaque de filtro ativo em todos os spans
       document.querySelectorAll('.tree span').forEach(span => span.classList.remove("active-filter"));
+
+      // Marca o span correspondente à categoria atual como ativo
       document.querySelectorAll('.tree span').forEach(span => {
         if (span.textContent === categoryPath.split("/").pop()) {
           span.classList.add("active-filter");
@@ -515,36 +567,48 @@
       });
     }
 
+    // ===== Exibe skeletons enquanto os dados carregam =====
     function showSkeletons(count = 8) {
       const shelf = document.getElementById('shelf');
-      shelf.innerHTML = '';
+      shelf.innerHTML = '';                         // Limpa conteúdo anterior
       for (let i = 0; i < count; i++) {
         const sk = document.createElement('div');
-        sk.className = 'book skeleton';
+        sk.className = 'book skeleton';             // Aplica estilo de placeholder
         shelf.appendChild(sk);
       }
     }
 
-
+    // ===== Busca ID de pasta pelo nome (Google Drive) =====
     async function getFolderIdByName(parentId, folderName) {
-      const url = `https://www.googleapis.com/drive/v3/files?q='${parentId}'+in+parents+and+trashed=false+and+mimeType='application/vnd.google-apps.folder'&key=${apiKey}&fields=files(id,name)`;
+      const url =
+        `https://www.googleapis.com/drive/v3/files?` +
+        `q='${parentId}'+in+parents+and+trashed=false+and+mimeType='application/vnd.google-apps.folder'` +
+        `&key=${apiKey}&fields=files(id,name)`;
       const res = await fetch(url);
       const data = await res.json();
+
+      // Encontra a pasta que bate com o nome (case-insensitive)
       const folder = data.files.find(f => f.name.toLowerCase() === folderName.toLowerCase());
       return folder ? folder.id : null;
     }
 
+    // ===== Lista recursivamente todas as capas dentro de uma pasta =====
     async function listCapasRecursively(parentId) {
-      const url = `https://www.googleapis.com/drive/v3/files?q='${parentId}'+in+parents+and+trashed=false&key=${apiKey}&fields=files(id,name,mimeType)`;
+      const url =
+        `https://www.googleapis.com/drive/v3/files?` +
+        `q='${parentId}'+in+parents+and+trashed=false` +
+        `&key=${apiKey}&fields=files(id,name,mimeType)`;
       const res = await fetch(url);
       const data = await res.json();
       let result = {};
 
       for (const file of data.files) {
         if (file.mimeType === "application/vnd.google-apps.folder") {
+          // Se for pasta, chama recursivamente
           const subResults = await listCapasRecursively(file.id);
-          result = Object.assign(result, subResults);
+          Object.assign(result, subResults);
         } else {
+          // Adiciona URL da imagem da capa no resultado
           const name = stripExtension(file.name).toLowerCase();
           result[name] = `https://lh3.googleusercontent.com/d/${file.id}=w400-h600`;
         }
@@ -552,133 +616,121 @@
       return result;
     }
 
+    // ===== Lista recursivamente todos os arquivos de texto =====
     async function listFilesRecursively(parentId, path = "") {
       const url =
         `https://www.googleapis.com/drive/v3/files` +
         `?q='${parentId}'+in+parents+and+trashed=false` +
         `&key=${apiKey}` +
         `&fields=files(id,name,mimeType,webViewLink,thumbnailLink)`;
-
       const res = await fetch(url);
       const data = await res.json();
       let results = [];
 
       for (const file of data.files || []) {
         if (file.mimeType === "application/vnd.google-apps.folder") {
+          // Ignora subpasta de capas e percorre outras pastas
           if (file.name.toLowerCase() === capaFolderName) continue;
           const sub = await listFilesRecursively(file.id, path + file.name + "/");
           results = results.concat(sub);
         } else {
+          // Anexa caminho relativo e adiciona à lista
           file.path = path;
           results.push(file);
         }
       }
-
       return results;
     }
 
-
+    // ===== Renderiza os livros na estante =====
     async function renderBooks(defaultRoot = 'Livros') {
       const shelf = document.getElementById('shelf');
       const treeRoot = document.getElementById('filterTree');
-      showSkeletons();
-      treeRoot.innerHTML = '';
+      showSkeletons();                              // 1) mostra placeholders
+      treeRoot.innerHTML = '';                       // limpa árvore antiga
 
       try {
-        // 1) Cache local
+        // ===== 1) Carregamento e cache =====
         let files;
         const cache = sessionStorage.getItem('estanteCache');
         if (cache) {
           const parsed = JSON.parse(cache);
-          const cacheValidoPorMs = 4 * 60 * 60 * 1000; // 24 horas
+          const cacheValidoPorMs = 4 * 60 * 60 * 1000; // 4h em ms
           const expirado = Date.now() - parsed.timestamp > cacheValidoPorMs;
 
           if (!expirado) {
-            files = parsed.files.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+            // Usa cache válido: arquivos e capas já armazenados
+            files = parsed.files.sort((a, b) =>
+              a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
+            );
             capasDrive = parsed.capas;
           } else {
             sessionStorage.removeItem('estanteCache');
-            // Continua e recarrega normalmente
           }
+        }
 
-        } else {
+        if (!files) {
+          // Busca pastas e arquivos no Drive
           const capaFolderId = await getFolderIdByName(folderId, capaFolderName);
           if (capaFolderId) {
             capasDrive = await listCapasRecursively(capaFolderId);
           }
           files = await listFilesRecursively(folderId);
           files.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+
+          // Salva no sessionStorage
           sessionStorage.setItem(
             'estanteCache',
-            JSON.stringify({
-              files,
-              capas: capasDrive,
-              timestamp: Date.now()
-            })
+            JSON.stringify({ files, capas: capasDrive, timestamp: Date.now() })
           );
-
         }
 
-        // 2) Renderização
+        // ===== 2) Criação dos cards =====
         shelf.innerHTML = '';
         const allPaths = [];
-
         for (const file of files) {
           const name = stripExtension(file.name);
           const nameNorm = name.toLowerCase();
           const path = file.path.replace(/\/$/, '');
-          const normalized = path;
-          allPaths.push(normalized);
+          allPaths.push(path);
 
-          // Definição da URL da capa (manual, thumbnail, fallback gerado)
+          // Escolhe URL de capa: manual, thumbnail ou gerada
           const manualCover = capasDrive[nameNorm];
           const thumbCover = file.thumbnailLink;
           const coverUrl = manualCover || thumbCover || generateCoverDataUrl(name);
 
-          // Criação do card
-          const bookDiv = document.createElement('div');
-          bookDiv.className = 'book';
-          bookDiv.dataset.path = normalized;
+          // Monta estrutura HTML do card
+          const bookDiv = document.createElement('div'); bookDiv.className = 'book';
+          bookDiv.dataset.path = path;
 
           const flipCard = document.createElement('div'); flipCard.className = 'flip-card';
           const flipInner = document.createElement('div'); flipInner.className = 'flip-inner';
 
-          // Frente
-          const front = document.createElement('div');
-          front.className = 'flip-front';
+          // Face frontal com imagem
+          const front = document.createElement('div'); front.className = 'flip-front';
           const img = document.createElement('img');
-          img.loading = 'lazy';
-          img.src = coverUrl;
-          img.alt = name;
+          img.loading = 'lazy'; img.src = coverUrl; img.alt = name;
           front.appendChild(img);
 
-          // Verso
+          // Face traseira com título e botão de leitura
           const back = document.createElement('div'); back.className = 'flip-back';
           const bookTitle = document.createElement('div'); bookTitle.className = 'book-title';
           bookTitle.textContent = name;
           const readButton = document.createElement('a'); readButton.className = 'read-button';
-          readButton.href = file.webViewLink;
-          readButton.target = '_blank';
+          readButton.href = file.webViewLink; readButton.target = '_blank';
           readButton.textContent = 'Ler';
           back.append(bookTitle, readButton);
 
-          // Montagem final
           flipInner.append(front, back);
           flipCard.appendChild(flipInner);
           bookDiv.appendChild(flipCard);
           shelf.appendChild(bookDiv);
+
+          // Animação de entrada
           requestAnimationFrame(() => bookDiv.classList.add('showing'));
         }
 
-        document.querySelectorAll('.flip-card').forEach(flipCard => {
-          flipCard.addEventListener('click', e => {
-            if (e.target.closest('.read-button')) return;
-            flipCard.classList.toggle('flipped');
-          });
-        });
-
-
-        // 3) Árvore de filtros
+        // ===== 3) Monta árvore de filtros =====
         const treeData = buildTree(allPaths);
         const treeStructure = createTreeElement(treeData);
         const wrapperUl = document.createElement('ul');
@@ -688,85 +740,97 @@
         wrapperUl.appendChild(wrapperLi);
         treeRoot.appendChild(wrapperUl);
 
-        // 4) Filtro inicial
+        // ===== 4) Aplica filtro inicial =====
         filterBooks(defaultRoot);
 
       } catch (err) {
         console.error("Erro ao carregar estante:", err);
-        shelf.innerHTML = "<p>Erro ao carregar arquivos.</p>";
+        shelf.innerHTML = "<p>Erro ao carregar arquivos.</p>";  // Mensagem de erro para o usuário
       }
     }
 
+    // ===== Interações após carregamento da página =====
     document.addEventListener("DOMContentLoaded", () => {
-      renderBooks('Livros');
-      const toggleBtn = document.getElementById("toggleSidebar");
-      const sidebar = document.getElementById("sidebar");
-      const closeBtn = document.getElementById("closeSidebar");
-      document.addEventListener("click", (event) => {
-        const isClickInsideSidebar = sidebar.contains(event.target);
-        const isToggleButton = toggleBtn.contains(event.target);
+      renderBooks('Livros');                          // Carrega a estante quando o DOM estiver pronto
 
-        if (!isClickInsideSidebar && !isToggleButton && sidebar.classList.contains("show")) {
-          // fecha a sidebar
+      const shelf = document.getElementById('shelf');
+      const toggleBtn = document.getElementById("toggleSidebar");   // Botão para abrir a sidebar
+      const sidebar = document.getElementById("sidebar");         // Painel lateral de filtros
+      const closeBtn = document.getElementById("closeSidebar");    // Botão '×' para fechar a sidebar
+      const filterTree = document.getElementById("filterTree");      // Elemento raiz da árvore de filtros
+
+      // ——— Flip único por vez em mobile ———
+      shelf.addEventListener('click', e => {
+        const card = e.target.closest('.flip-card');
+        if (!card) return;                         // só continua em cima de .flip-card
+        if (e.target.closest('.read-button')) return; // ignora clique no “Ler”
+
+        // em telas ≤600px, desvira todos os outros antes de virar este
+        if (window.innerWidth <= 600) {
+          document.querySelectorAll('.flip-card.flipped')
+            .forEach(c => { if (c !== card) c.classList.remove('flipped'); });
+        }
+
+        // executa o flip neste card
+        card.classList.toggle('flipped');
+      });
+
+      // ——— Fecha todos os flips ao clicar fora de qualquer card ———
+      document.addEventListener('click', e => {
+        if (e.target.closest('.flip-card') || e.target.closest('.read-button')) return;
+        document.querySelectorAll('.flip-card.flipped')
+          .forEach(c => c.classList.remove('flipped'));
+      });
+
+      // Fecha a sidebar ao clicar fora dela ou do botão de toggle
+      document.addEventListener("click", (event) => {
+        const clickDentro = sidebar.contains(event.target);          // Clique dentro da sidebar?
+        const clickToggle = toggleBtn.contains(event.target);        // Clique no botão de abrir?
+
+        if (!clickDentro && !clickToggle && sidebar.classList.contains("show")) {
+          // Remove a classe que exibe a sidebar
           sidebar.classList.remove("show");
           sidebar.classList.add("sidebar-hidden");
-          toggleBtn.style.display = "block";
+          toggleBtn.style.display = "block";                        // Reexibe o botão de abrir
 
-          // fecha TODOS os subfiltros
-          document.querySelectorAll(".tree li.open").forEach(li => {
-            li.classList.remove("open");
-            const icon = li.querySelector(".toggle-icon");
-            if (icon) icon.textContent = "+";
+          // Mantém apenas o nó raiz da árvore sempre aberto
+          const rootLi = filterTree.querySelector(":scope > ul > li");
+          filterTree.querySelectorAll("li.open").forEach(li => {
+            if (li !== rootLi) {
+              li.classList.remove("open");                          // Fecha subnós abertos
+              const icon = li.querySelector(".toggle-icon");
+              if (icon) icon.textContent = "+";                     // Restaura ícone de '+'
+            }
           });
-
         }
       });
 
-
+      // Abre a sidebar ao clicar no botão de toggle
       toggleBtn.addEventListener("click", () => {
         sidebar.classList.remove("sidebar-hidden");
         sidebar.classList.add("show");
-        toggleBtn.style.display = 'none'; // Oculta o botão "Filtros"
+        toggleBtn.style.display = 'none';                           // Esconde o botão de abrir
       });
 
+      // Fecha a sidebar ao clicar no '×'
       closeBtn.addEventListener("click", () => {
         sidebar.classList.remove("show");
         sidebar.classList.add("sidebar-hidden");
-        toggleBtn.style.display = 'block'; // Mostra novamente o botão "Filtros"
+        toggleBtn.style.display = 'block';                          // Reexibe o botão de abrir
       });
-
-      //Busca textual
-      const searchInput = document.getElementById("searchInput");
-      searchInput.addEventListener("input", debounce(() => {
-        const query = searchInput.value.toLowerCase();
-        document.querySelectorAll('.book').forEach(book => {
-          const title = book.querySelector(".book-title")?.textContent.toLowerCase() || "";
-          book.classList.toggle("hidden", !title.includes(query));
-        });
-      }, 200));
-      // flipa no clique/touch, exceto quando clicar no botão "Ler"
-      document.querySelectorAll('.flip-card').forEach(flipCard => {
-        flipCard.addEventListener('click', (e) => {
-          // se o clique for no link Ler, não altera o flip
-          if (e.target.closest('.read-button')) return;
-          flipCard.classList.toggle('flipped');
-        });
-      });
-      // ao clicar em qualquer lugar FORA de um flip-card, todos desviram
-      document.addEventListener('click', (e) => {
-        // se o clique for dentro de um flip-card ou no botão "Ler", ignora
-        if (e.target.closest('.flip-card') || e.target.closest('.read-button')) return;
-
-        // remove a classe 'flipped' de todos os cards virados
-        document.querySelectorAll('.flip-card.flipped')
-          .forEach(card => card.classList.remove('flipped'));
-      });
-
-
-
     });
 
+    // ===== Busca textual em tempo real =====
+    const searchInput = document.getElementById("searchInput");
+    searchInput.addEventListener("input", debounce(() => {
+      const query = searchInput.value.toLowerCase();               // Termo digitado pelo usuário
 
+      // Para cada livro, verifica se o título inclui o termo de busca
+      document.querySelectorAll('.book').forEach(book => {
+        const title = book.querySelector(".book-title")?.textContent.toLowerCase() || "";
+        book.classList.toggle("hidden", !title.includes(query));   // Oculta ou mostra o livro
+      });
+    }, 200));
 
   </script>
 </body>
