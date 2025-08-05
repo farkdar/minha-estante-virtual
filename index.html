@@ -7,6 +7,46 @@
   <title>Estante Virtual</title>
   <style>
     /* ======================================================
+   VARIÁVEIS DE TEMA
+   ====================================================== */
+    :root {
+      /* cores claras (padrão) */
+      --bg-body: #f4efe9;
+      --text-main: #333;
+      --bg-card: #fff;
+      --bg-sidebar: #3e2f1c;
+      --btn-bg: #6f4e37;
+      --skeleton-bg: #ddd;
+      --filter-text: #fff;
+      --filter-active-bg: rgba(255, 255, 255, 0.1);
+      --toggle-icon: #fff;
+      --loading-text-color: var(--btn-bg);
+      --input-bg: #fff;
+      --input-text: #333;
+      --input-placeholder: #666;
+    }
+
+    body.dark {
+      /* cores escuras */
+      --bg-body: #1e1e1e;
+      --text-main: #ddd;
+      --bg-card: #2a2a2a;
+      --bg-sidebar: #141414;
+      --btn-bg: #444;
+      --skeleton-bg: #333;
+      --filter-text: #ddd;
+      --filter-active-bg: rgba(255, 255, 255, 0.1);
+      --toggle-icon: #ddd;
+      --loading-text-color: #ddd;
+      --input-bg: #3a3a3a;
+      --input-text: #eee;
+      --input-placeholder: #aaa;
+    }
+
+
+
+
+    /* ======================================================
    CARREGAR ESQUELETO
    — Animação “pulse” para estado de carregamento
    — .skeleton: estilo base para elementos placeholder
@@ -14,44 +54,25 @@
    — .loading-text: Mensagem de carregamento
    ====================================================== */
 
-    @keyframes pulse {
-      0% {
-        background: #ddd;
-      }
-
-      50% {
-        background: #ccc;
-      }
-
-      100% {
-        background: #ddd;
-      }
-    }
-
     .loading-text {
       font-size: 1.2rem;
       font-weight: bold;
-      color: #6f4e37;
-      /* marrom Florido Doces */
+      color: var(--loading-text-color);
       text-align: center;
       margin-bottom: 16px;
-      /* espaço antes dos skeletons */
     }
 
     .skeleton {
-      background: #ddd;
+      background: var(--skeleton-bg);
       animation: pulse 1.5s infinite;
       border-radius: 4px;
     }
 
     .book.skeleton {
       aspect-ratio: 5 / 7;
-      /* mantém proporção de capa de livro */
       opacity: 1 !important;
-      /* garante visibilidade */
       transform: none !important;
     }
-
 
     /* ======================================================
    ESTRUTURA DA ÁRVORE DE FILTROS
@@ -74,9 +95,7 @@
 
     .tree ul ul {
       padding-left: 10px;
-      /* recuo para sublistas */
       max-height: 0;
-      /* oculto por padrão */
       overflow: hidden;
       transition: max-height 0.4s ease-out;
     }
@@ -91,21 +110,19 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      color: #fff;
+      color: var(--filter-text);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     .tree-toggle.active-filter {
-      background-color: rgba(255, 255, 255, 0.1);
-      outline: 2px solid #6f4e37;
-      /* destaque de filtro ativo */
+      background-color: var(--filter-active-bg);
+      outline: 2px solid var(--btn-bg);
     }
 
     .tree li.open>ul {
       max-height: 1000px;
-      /* expande lista */
       transition: max-height 0.4s ease-in;
     }
 
@@ -115,15 +132,14 @@
       text-align: center;
       cursor: pointer;
       margin-left: auto;
-      /* empurra para o fim */
-      margin-right: 0;
+      color: var(--toggle-icon);
     }
-
 
     /* ======================================================
    LAYOUT & SIDEBAR
    — body: layout flex com sidebar fixa
    — .sidebar: painel lateral de filtros fora da tela
+   — #filterTree: espaçamento no final da arvore com o inferior da tela
    — .sidebar.show / .sidebar-hidden: mostra/esconde
    — .sidebar-header & .close-btn: cabeçalho da sidebar
    — .main / .main.shifted: área principal e estado deslocado
@@ -132,9 +148,9 @@
     body {
       margin: 0;
       font-family: 'Georgia', serif;
-      background: #f4efe9;
+      background: var(--bg-body);
+      color: var(--text-main);
       display: flex;
-      /* sidebar + conteúdo */
     }
 
     .sidebar {
@@ -142,26 +158,29 @@
       top: 0;
       left: 0;
       width: 260px;
-      max-height: 100vh;
-      background-color: rgba(62, 47, 28, 0.9);
-      color: #fff;
-      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.4);
+      height: 100vh;
+      background-color: var(--bg-sidebar);
+      color: var(--filter-text);
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 1);
       padding: 20px;
       z-index: 1500;
       overflow-y: auto;
       transform: translateX(-100%);
-      /* escondida à esquerda */
       transition: transform 0.3s ease-in-out;
     }
 
+    #filterTree {
+      padding-bottom: 60px;
+      /* espaço extra após o último <li> */
+    }
+
+
     .sidebar.show {
       transform: translateX(0);
-      /* mostra sidebar */
     }
 
     .sidebar.sidebar-hidden {
       transform: translateX(-100%);
-      /* mantém escondida */
     }
 
     .sidebar-header {
@@ -174,7 +193,7 @@
     .close-btn {
       background: none;
       border: none;
-      color: #fff;
+      color: var(--filter-text);
       font-size: 1.5rem;
       cursor: pointer;
     }
@@ -187,7 +206,6 @@
 
     .main.shifted {
       margin-left: 260px;
-      /* desloca ao abrir sidebar */
     }
 
 
@@ -209,7 +227,14 @@
       font-size: 14px;
       border-radius: 6px;
       margin-left: auto;
-      /* empurra para a direita */
+      background-color: var(--input-bg);
+      color: var(--input-text);
+      border: 1px solid var(--btn-bg);
+    }
+
+    /* placeholder do input */
+    #searchInput::placeholder {
+      color: var(--input-placeholder);
     }
 
 
@@ -229,13 +254,12 @@
     }
 
     .book {
-      width: calc(10% - 25px);
+      width: calc(15% - 25px);
       min-width: 100px;
       text-align: center;
       font-size: 14px;
-      color: #333;
+      color: var(--text-main);
       opacity: 0;
-      /* oculto até aparecer */
       transform: translateY(10px);
       transition: opacity 0.3s, transform 0.3s;
     }
@@ -260,7 +284,6 @@
         width: calc(50% - 25px);
       }
     }
-
 
     /* ======================================================
    FLIP CARD
@@ -292,13 +315,11 @@
     @media (hover: hover) {
       .flip-card:hover .flip-inner {
         transform: rotateY(180deg);
-        /* rotação ao passar o mouse */
       }
     }
 
     .flip-card.flipped .flip-inner {
       transform: rotateY(180deg);
-      /* rotação por classe .flipped */
     }
 
     .flip-front,
@@ -323,8 +344,8 @@
     }
 
     .flip-back {
-      background: #fff;
-      color: #333;
+      background: var(--bg-card);
+      color: var(--text-main);
       transform: rotateY(180deg);
       display: flex;
       flex-direction: column;
@@ -343,13 +364,17 @@
     .read-button {
       font-size: 12px;
       padding: 4px 8px;
-      background-color: #6f4e37;
+      background-color: var(--btn-bg);
       color: #fff;
       border: none;
       border-radius: 4px;
       text-decoration: none;
     }
 
+
+    /* ======================================================
+   NO-COVER FALLBACK
+   ====================================================== */
 
     .no-cover {
       /* Flex vertical, permitindo múltiplas linhas de texto */
@@ -365,7 +390,6 @@
       text-align: center !important;
     }
 
-
     /* ======================================================
    UTILITÁRIO & BOTÃO DE TOGGLE
    — .toggle-button: botão fixo para abrir filtros
@@ -375,7 +399,7 @@
       position: fixed;
       top: 20px;
       left: 20px;
-      background-color: #6f4e37;
+      background-color: var(--btn-bg);
       color: #fff;
       border: none;
       padding: 8px 12px;
@@ -383,6 +407,20 @@
       font-size: 14px;
       z-index: 2000;
       cursor: pointer;
+    }
+
+    #toggleTheme {
+      position: fixed;
+      top: auto;
+      /* anula o top original */
+      bottom: 20px;
+      /* 20px acima da base da janela */
+      right: 20px;
+      /* 20px da borda direita */
+      left: auto;
+      /* anula o left original */
+      z-index: 2000;
+      /* garante que fique acima de tudo */
     }
   </style>
 </head>
@@ -406,6 +444,9 @@
 
   <!-- Botão fixo para abrir/fechar a sidebar de filtros -->
   <button id="toggleSidebar" class="toggle-button">📁 Filtros</button>
+  <button id="toggleTheme" class="toggle-button">
+    🌙
+  </button>
 
   <!-- Área principal de conteúdo -->
   <div class="main">
@@ -685,27 +726,41 @@
 
     // ===== Lista recursivamente todas as capas dentro de uma pasta =====
     async function listCapasRecursively(parentId) {
-      const url =
-        `https://www.googleapis.com/drive/v3/files?` +
-        `q='${parentId}'+in+parents+and+trashed=false` +
-        `&key=${apiKey}&fields=files(id,name,mimeType)`;
-      const res = await fetch(url);
-      const data = await res.json();
       let result = {};
+      let pageToken = null;
 
-      for (const file of data.files) {
-        if (file.mimeType === "application/vnd.google-apps.folder") {
-          // Se for pasta, chama recursivamente
-          const subResults = await listCapasRecursively(file.id);
-          Object.assign(result, subResults);
-        } else {
-          // Adiciona URL da imagem da capa no resultado
-          const name = stripExtension(file.name).toLowerCase();
-          result[name] = `https://lh3.googleusercontent.com/d/${file.id}=w400-h600`;
+      do {
+        const url =
+          `https://www.googleapis.com/drive/v3/files?` +
+          `q='${parentId}'+in+parents+and+trashed=false` +
+          `&key=${apiKey}` +
+          `&fields=nextPageToken,files(id,name,mimeType,thumbnailLink)` +
+          `&pageSize=1000` +
+          (pageToken ? `&pageToken=${pageToken}` : '');
+
+        const res = await fetch(url);
+        const data = await res.json();
+        console.log('[listCapasRecursively] Fetched', data.files.length, 'files');
+
+        for (const file of data.files) {
+          if (file.mimeType === "application/vnd.google-apps.folder") {
+            const sub = await listCapasRecursively(file.id);
+            Object.assign(result, sub);
+          } else {
+            const name = stripExtension(file.name).toLowerCase();
+            // usamos thumbnailLink direto, garantindo que seja um JPG/PNG válido
+            result[name] = file.thumbnailLink;
+          }
         }
-      }
+
+        pageToken = data.nextPageToken;
+      } while (pageToken);
+
+      console.log('[listCapasRecursively] Total de capas mapeadas:', Object.keys(result).length);
       return result;
     }
+
+
 
     // ===== Lista recursivamente todos os arquivos de texto =====
     async function listFilesRecursively(parentId, path = "") {
@@ -733,73 +788,81 @@
       return results;
     }
 
+    // ——— Função auxiliar para "achatar" a árvore de filtros em uma lista de paths ———
+    function flattenPaths(tree, parentPath = "") {
+      let order = [];
+      Object.keys(tree)
+        .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+        .forEach(key => {
+          const fullPath = parentPath ? `${parentPath}/${key}` : key;
+          order.push(fullPath);
+          order = order.concat(flattenPaths(tree[key], fullPath));
+        });
+      return order;
+    }
+
     // ===== Renderiza os livros na estante =====
     async function renderBooks() {
-      const shelf = document.getElementById('shelf');       // Container dos cards
-      const treeRoot = document.getElementById('filterTree');  // Container da árvore de filtros
+      const shelf = document.getElementById('shelf');
+      const treeRoot = document.getElementById('filterTree');
 
-      // 1) Exibe skeletons e mensagem de carregamento
+      // 1) exibe skeletons
       showSkeletons();
-      // Limpa árvore antiga
-      treeRoot.innerHTML = '';
+      treeRoot.innerHTML = '';  // limpa tree antiga
 
       try {
-        // ===== 1) Carregamento e cache =====
+        // 2) carrega arquivos e capas (cache ou API)
         let files;
         const cache = sessionStorage.getItem('estanteCache');
         if (cache) {
           const parsed = JSON.parse(cache);
           const quatroHoras = 4 * 60 * 60 * 1000;
-          const expirado = Date.now() - parsed.timestamp > quatroHoras;
-          if (!expirado) {
-            // Usa cache válido
-            files = parsed.files.sort((a, b) =>
-              a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
-            );
+          if (Date.now() - parsed.timestamp <= quatroHoras) {
+            files = parsed.files;
             capasDrive = parsed.capas;
           } else {
             sessionStorage.removeItem('estanteCache');
           }
         }
-
         if (!files) {
-          // 1.1) Busca ID da pasta de capas
           const capaFolderId = await getFolderIdByName(folderId, capaFolderName);
-          if (capaFolderId) {
-            capasDrive = await listCapasRecursively(capaFolderId);
-          }
-          // 1.2) Lista arquivos de texto
+          if (capaFolderId) capasDrive = await listCapasRecursively(capaFolderId);
           files = await listFilesRecursively(folderId);
-          files.sort((a, b) =>
-            a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
-          );
-          // 1.3) Armazena no cache
           sessionStorage.setItem(
             'estanteCache',
             JSON.stringify({ files, capas: capasDrive, timestamp: Date.now() })
           );
         }
 
-        // ===== Remover mensagem de carregamento (fora da <div id="shelf">) =====
-        const loadingMsg = document.querySelector('.loading-text');
-        if (loadingMsg) loadingMsg.remove();
+        // 3) remove loading
+        document.querySelector('.loading-text')?.remove();
 
-        // ===== 2) Criação dos cards =====
-        shelf.innerHTML = '';  // Limpa skeletons e cards antigos
-        const allPaths = [];
+        // 4) monta árvore e obtém a ordem dos paths
+        const allPaths = files.map(f => f.path.replace(/\/$/, ''));
+        const treeData = buildTree(allPaths);
+        const orderedPaths = flattenPaths(treeData);
 
-        for (const file of files) {
+        // 5) ordena files:
+        //    a) pelo índice em orderedPaths (ordem dos filtros)
+        //    b) se estiverem no mesmo filtro, alfabeticamente pelo nome
+        files.sort((a, b) => {
+          const pa = a.path.replace(/\/$/, '');
+          const pb = b.path.replace(/\/$/, '');
+          const idxA = orderedPaths.indexOf(pa);
+          const idxB = orderedPaths.indexOf(pb);
+          if (idxA !== idxB) return idxA - idxB;
+          return a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' });
+        });
+
+        // 6) renderiza todos os cards no mesmo shelf
+        shelf.innerHTML = '';
+        files.forEach(file => {
           const name = stripExtension(file.name);
           const nameNorm = name.toLowerCase();
           const path = file.path.replace(/\/$/, '');
-          allPaths.push(path);
-
-          // Escolhe URL de capa
           const manualCover = capasDrive[nameNorm];
-          const thumbCover = file.thumbnailLink;
-          const coverUrl = manualCover || thumbCover || generateCoverDataUrl(name);
+          const coverUrl = manualCover || generateCoverDataUrl(name);
 
-          // Monta card flip
           const bookDiv = document.createElement('div');
           bookDiv.className = 'book';
           bookDiv.dataset.path = path;
@@ -809,49 +872,38 @@
           const flipInner = document.createElement('div');
           flipInner.className = 'flip-inner';
 
-          // Face frontal (capa)
+          // frente
           const front = document.createElement('div');
           front.className = 'flip-front';
-
           const img = document.createElement('img');
           img.loading = 'lazy';
           img.src = coverUrl;
           img.alt = name;
-
-          // Se falhar ao carregar, limpa e injeta o fallback
-          img.onerror = () => {
-            img.onerror = null;  // só uma tentativa
-            // gera capa com texto
-            img.src = generateCoverDataUrl(name, 400, 600);
-          };
-
-          // Se tudo der certo, apenas adiciona a imagem
+          img.onerror = () => img.src = generateCoverDataUrl(name, 400, 600);
           front.appendChild(img);
 
-          // Face traseira (título + botão)
+          // verso
           const back = document.createElement('div');
           back.className = 'flip-back';
-          const bookTitle = document.createElement('div');
-          bookTitle.className = 'book-title';
-          bookTitle.textContent = name;
-          const readButton = document.createElement('a');
-          readButton.className = 'read-button';
-          readButton.href = file.webViewLink;
-          readButton.target = '_blank';
-          readButton.textContent = 'Ler';
-          back.append(bookTitle, readButton);
+          const title = document.createElement('div');
+          title.className = 'book-title';
+          title.textContent = name;
+          const btn = document.createElement('a');
+          btn.className = 'read-button';
+          btn.href = file.webViewLink;
+          btn.target = '_blank';
+          btn.textContent = 'Ler';
+          back.append(title, btn);
 
           flipInner.append(front, back);
           flipCard.appendChild(flipInner);
           bookDiv.appendChild(flipCard);
           shelf.appendChild(bookDiv);
 
-          // Animação de entrada
           requestAnimationFrame(() => bookDiv.classList.add('showing'));
-        }
+        });
 
-        // ===== 3) Monta árvore de filtros =====
-        const treeData = buildTree(allPaths);
+        // 7) monta novamente a árvore de filtros
         const treeStructure = createTreeElement(treeData);
         const wrapperUl = document.createElement('ul');
         const wrapperLi = document.createElement('li');
@@ -860,17 +912,16 @@
         wrapperUl.appendChild(wrapperLi);
         treeRoot.appendChild(wrapperUl);
 
-        // ===== 4) Aplica filtro inicial (sem checkbox marcado) =====
+        // 8) aplica filtro inicial
         filterBooksMulti();
 
       } catch (err) {
         console.error("Erro ao carregar estante:", err);
-        // Em caso de erro, remove a mensagem de carregamento e exibe aviso
-        const loadingMsg = document.querySelector('.loading-text');
-        if (loadingMsg) loadingMsg.remove();
+        document.querySelector('.loading-text')?.remove();
         shelf.innerHTML = "<p>Erro ao carregar arquivos.</p>";
       }
     }
+
 
     // ===== Interações após carregamento da página =====
     document.addEventListener("DOMContentLoaded", () => {
@@ -919,16 +970,6 @@
           sidebar.classList.remove("show");
           sidebar.classList.add("sidebar-hidden");
           toggleBtn.style.display = "block";                        // Reexibe o botão de abrir
-
-          // Mantém apenas o nó raiz da árvore sempre aberto
-          const rootLi = filterTree.querySelector(":scope > ul > li");
-          filterTree.querySelectorAll("li.open").forEach(li => {
-            if (li !== rootLi) {
-              li.classList.remove("open");                          // Fecha subnós abertos
-              const icon = li.querySelector(".toggle-icon");
-              if (icon) icon.textContent = "+";                     // Restaura ícone de '+'
-            }
-          });
         }
       });
 
@@ -949,15 +990,39 @@
 
     // ===== Busca textual em tempo real =====
     const searchInput = document.getElementById("searchInput");
+    function removeAccents(str) {         // utilitário pra remover acentos
+      return str
+        .normalize('NFD')                 // separa base + diacríticos
+        .replace(/[\u0300-\u036f]/g, ''); // remove os diacríticos
+    }
     searchInput.addEventListener("input", debounce(() => {
-      const query = searchInput.value.toLowerCase();               // Termo digitado pelo usuário
+      const rawQuery = searchInput.value.toLowerCase(); // Termo digitado pelo usuário
+      const query = removeAccents(rawQuery); // remove acentuacao
 
       // Para cada livro, verifica se o título inclui o termo de busca
       document.querySelectorAll('.book').forEach(book => {
-        const title = book.querySelector(".book-title")?.textContent.toLowerCase() || "";
-        book.classList.toggle("hidden", !title.includes(query));   // Oculta ou mostra o livro
+        const titleRaw = book.querySelector(".book-title")?.textContent.toLowerCase() || "";
+        const title = removeAccents(titleRaw);
+        book.classList.toggle("hidden", !title.includes(query)); // Oculta ou mostra o livro
       });
     }, 200));
+
+    // ===== Modo Noturno =====
+    const themeBtn = document.getElementById('toggleTheme');
+    const current = localStorage.getItem('theme') || '';
+
+    if (current === 'dark') {
+      document.body.classList.add('dark');
+      themeBtn.textContent = '☀️';
+    }
+
+    themeBtn.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      const isDark = document.body.classList.contains('dark');
+      themeBtn.textContent = isDark ? '☀️' : '🌙';
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+
 
   </script>
 </body>
