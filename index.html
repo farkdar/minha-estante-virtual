@@ -11,6 +11,7 @@
    — Animação “pulse” para estado de carregamento
    — .skeleton: estilo base para elementos placeholder
    — .book.skeleton: mantém proporção e visibilidade do esqueleto
+   — .loading-text: Mensagem de carregamento
    ====================================================== */
 
     @keyframes pulse {
@@ -25,6 +26,16 @@
       100% {
         background: #ddd;
       }
+    }
+
+    .loading-text {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #6f4e37;
+      /* marrom Florido Doces */
+      text-align: center;
+      margin-bottom: 16px;
+      /* espaço antes dos skeletons */
     }
 
     .skeleton {
@@ -257,6 +268,7 @@
    — .flip-inner: contexto 3D e rotação
    — .flip-front / .flip-back: faces escondidas
    — .hidden: oculta itens filtrados
+   — .no-cover: fallback quando a capa não carregar
    ====================================================== */
 
     .flip-card {
@@ -310,15 +322,6 @@
       display: block;
     }
 
-    .no-cover {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      background: #d9cfc3;
-      padding: 6px;
-    }
-
     .flip-back {
       background: #fff;
       color: #333;
@@ -345,6 +348,21 @@
       border: none;
       border-radius: 4px;
       text-decoration: none;
+    }
+
+
+    .no-cover {
+      /* Flex vertical, permitindo múltiplas linhas de texto */
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-items: center !important;
+      width: 100%;
+      height: 100%;
+      background: #d9cfc3 !important;
+      padding: 12px !important;
+      box-sizing: border-box !important;
+      text-align: center !important;
     }
 
 
@@ -377,7 +395,11 @@
       <h2>📚 Filtros</h2> <!-- Título da seção de filtros -->
       <button id="closeSidebar" class="close-btn">×</button> <!-- Botão para fechar a sidebar -->
     </div>
-
+    <!-- Controles de expansão -->
+    <div style="margin-bottom: 1rem; display: flex; gap: 8px;">
+      <button id="expandAllBtn" class="read-button">Expandir tudo</button>
+      <button id="collapseAllBtn" class="read-button">Recolher tudo</button>
+    </div>
     <!-- Container da árvore de filtros (itens dinâmicos inseridos via JavaScript) -->
     <div class="tree" id="filterTree"></div>
   </div>
@@ -411,6 +433,13 @@
 
     // ===== Gera URL de dados para capa =====
     // Cria dinamicamente uma imagem de capa (PNG) usando canvas e retorna como DataURL
+
+    // * Gera uma capa com título em múltiplas linhas, centralizado
+    // * @param {string} title — texto do título
+    // * @param {number} width — largura do canvas
+    // * @param {number} height — altura do canvas
+    // * @returns {string} DataURL da imagem PNG
+
     function generateCoverDataUrl(title, width = 400, height = 600) {
       // Cria elemento canvas e define largura/altura
       const canvas = document.createElement("canvas");
@@ -426,20 +455,41 @@
       ctx.fillRect(0, 0, width, height);            // Preenche fundo
 
       // Configura estilo de texto para o título
+      let fontSize = 48; // tamanho base
+      ctx.font = `${fontSize}px serif`;
       ctx.fillStyle = "#fff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      let fontSize = 40;
-      ctx.font = `${fontSize}px serif`;
 
-      // Ajusta fonte para caber na largura, reduzindo até encaixar
-      while (ctx.measureText(title).width > width - 40) {
-        fontSize -= 2;
-        ctx.font = `${fontSize}px serif`;
+      const maxTextWidth = width - 40;    // margem de 20px em cada lado
+      const words = title.split(/\s+/);
+      const lines = [];
+      let currentLine = words[0];
+
+      // Quebra em palavras que caibam no maxTextWidth
+      for (let i = 1; i < words.length; i++) {
+        const word = words[i];
+        const testLine = `${currentLine} ${word}`;
+        const { width: w } = ctx.measureText(testLine);
+        if (w <= maxTextWidth) {
+          currentLine = testLine;
+        } else {
+          lines.push(currentLine);
+          currentLine = word;
+        }
       }
+      lines.push(currentLine);
 
-      // Desenha o texto centralizado
-      ctx.fillText(title, width / 2, height / 2);
+      // Centraliza o bloco de texto verticalmente
+      const lineHeight = fontSize * 1.2;
+      const textBlockHeight = lines.length * lineHeight;
+      let y = (height - textBlockHeight) / 2 + lineHeight / 2;
+
+      // Desenha cada linha
+      lines.forEach(line => {
+        ctx.fillText(line, width / 2, y);
+        y += lineHeight;
+      });
 
       // Retorna DataURL em PNG
       return canvas.toDataURL("image/png");
@@ -471,69 +521,66 @@
     }
 
     // ===== Cria elementos HTML para árvore de filtros =====
+    // Função que cria a árvore de filtros com seleção múltipla via checkboxes
     function createTreeElement(tree, parentPath = "") {
       const ul = document.createElement("ul");
 
-      // Ordena alfabeticamente considerando pt-BR
       Object.keys(tree)
         .sort((a, b) => a.localeCompare(b, 'pt-BR'))
         .forEach(key => {
           const li = document.createElement("li");
-          li.classList.add("tree-node");
-
-          const span = document.createElement("span");
-          span.textContent = key;
-          span.className = "tree-toggle";
-
           const fullPath = parentPath ? `${parentPath}/${key}` : key;
           const hasChildren = Object.keys(tree[key]).length > 0;
-          let toggleIcon = null;
 
+          // 1) Checkbox: marca/desmarca sem expandir nós
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.dataset.path = fullPath;
+          checkbox.addEventListener("click", e => e.stopPropagation());
+          checkbox.addEventListener("change", () => filterBooksMulti());
+
+          // 2) Texto: ao clicar expande/contrai este nó
+          const textSpan = document.createElement("span");
+          textSpan.className = "tree-toggle";
+          textSpan.textContent = key;
+          textSpan.style.cursor = "pointer";
+          textSpan.style.marginLeft = "6px";
+          textSpan.addEventListener("click", e => {
+            if (!hasChildren) return;   // sem filhos, não expande
+            e.stopPropagation();
+            li.classList.toggle("open");
+            // atualiza ícone
+            toggleIcon.textContent = li.classList.contains("open") ? "–" : "+";
+          });
+
+          // 3) Monta o header com checkbox e texto
+          const header = document.createElement("div");
+          header.style.display = "flex";
+          header.style.alignItems = "center";
+          header.append(checkbox, textSpan);
+
+          // 4) Se houver filhos, cria e anexa o ícone; senão, não cria
+          let toggleIcon;
           if (hasChildren) {
-            // Marca nó com filhos e adiciona ícone
-            span.classList.add("has-children");
             toggleIcon = document.createElement("span");
             toggleIcon.className = "toggle-icon";
-            toggleIcon.textContent = "+";         // ícone para expandir
-            span.appendChild(toggleIcon);
-          }
-
-          // Evento de clique no filtro
-          span.onclick = e => {
-            e.stopPropagation();                    // Evita borbulhar para outros ítems
-
-            if (hasChildren) {
-              // Fecha outros nós abertos
-              Array.from(li.parentElement.children)
-                .filter(el => el.classList.contains('open'))
-                .forEach(sib => {
-                  if (sib !== li) {
-                    sib.classList.remove("open");
-                    const icon = sib.querySelector(".toggle-icon");
-                    if (icon) icon.textContent = "+";
-                  }
-                });
-
-              // Alterna estado do nó atual
+            toggleIcon.textContent = "+";  // inicialmente fechado
+            toggleIcon.style.marginLeft = "auto";
+            // clique no ícone também expande/contrai
+            toggleIcon.addEventListener("click", e => {
+              e.stopPropagation();
               li.classList.toggle("open");
               toggleIcon.textContent = li.classList.contains("open") ? "–" : "+";
-            }
+            });
+            header.append(toggleIcon);
+          }
 
-            // Aplica filtro de livros baseado no caminho completo
-            filterBooks(fullPath);
+          li.appendChild(header);
 
-            // Atualiza classe active-filter
-            document.querySelectorAll(".tree-toggle.active-filter")
-              .forEach(s => s.classList.remove("active-filter"));
-            span.classList.add("active-filter");
-          };
-
-          li.appendChild(span);
-
+          // 5) Se tiver filhos, processa recursivamente
           if (hasChildren) {
-            // Chamada recursiva para filhos
-            const subTree = createTreeElement(tree[key], fullPath);
-            li.appendChild(subTree);
+            const subUl = createTreeElement(tree[key], fullPath);
+            li.appendChild(subUl);
           }
 
           ul.appendChild(li);
@@ -542,41 +589,85 @@
       return ul;
     }
 
-    // ===== Filtra livros pelo caminho de categoria =====
-    function filterBooks(categoryPath) {
-      // Percorre todos os elementos .book que possuem data-path
+    // Função de filtro que exibe livros que correspondem a qualquer checkbox marcado
+    function filterBooksMulti() {
+      // Obtém todos os paths selecionados (lowercase)
+      const selected = Array.from(
+        document.querySelectorAll('.tree input[type="checkbox"]:checked')
+      ).map(cb => cb.dataset.path.toLowerCase());
+
       document.querySelectorAll('.book[data-path]').forEach(book => {
-        const bookPath = book.dataset.path.toLowerCase();          // Caminho do livro (minusculas)
-        const category = categoryPath.toLowerCase();               // Categoria selecionada (minusculas)
+        const bookPath = book.dataset.path.toLowerCase();
 
-        // Verifica se o livro pertence exatamente à categoria ou a um subdiretório
-        const isMatch = bookPath === category || bookPath.startsWith(category + "/");
-
-        // Adiciona ou remove a classe 'hidden' conforme correspondência
-        book.classList.toggle("hidden", !isMatch);
-      });
-
-      // Remove destaque de filtro ativo em todos os spans
-      document.querySelectorAll('.tree span').forEach(span => span.classList.remove("active-filter"));
-
-      // Marca o span correspondente à categoria atual como ativo
-      document.querySelectorAll('.tree span').forEach(span => {
-        if (span.textContent === categoryPath.split("/").pop()) {
-          span.classList.add("active-filter");
+        if (selected.length === 0) {
+          // sem filtros: mostra todos
+          book.classList.remove("hidden");
+        } else {
+          // exibe se corresponder a qualquer categoria marcada
+          const matches = selected.some(path =>
+            bookPath === path || bookPath.startsWith(path + "/")
+          );
+          book.classList.toggle("hidden", !matches);
         }
       });
     }
 
+    // Expande todos os nós da árvore de filtros
+    function expandAll() {
+      document.querySelectorAll('.tree li').forEach(li => {
+        const icon = li.querySelector('.toggle-icon');
+        if (icon) {
+          li.classList.add("open");
+          icon.textContent = "–";
+        }
+      });
+    }
+
+    // Recolhe todos os nós da árvore de filtros
+    function collapseAll() {
+      // 1) Seleciona o <li> raiz (o primeiro item dentro de .tree > ul)
+      const rootLi = document.querySelector('.tree > ul > li');
+
+      // 2) Para cada <li> que estiver aberto...
+      document.querySelectorAll('.tree li.open').forEach(li => {
+        // 3) ...se não for o rootLi, fecha-o
+        if (li !== rootLi) {
+          li.classList.remove('open');
+          const icon = li.querySelector('.toggle-icon');
+          // 4) Atualiza o ícone para '+'
+          if (icon) icon.textContent = '+';
+        }
+      });
+    }
+
+
     // ===== Exibe skeletons enquanto os dados carregam =====
     function showSkeletons(count = 8) {
       const shelf = document.getElementById('shelf');
-      shelf.innerHTML = '';                         // Limpa conteúdo anterior
+
+      // 1) Remove mensagem de carregamento anterior, se existir
+      const oldMsg = document.querySelector('.loading-text');
+      if (oldMsg) oldMsg.remove();
+
+      // 2) Cria a mensagem de carregamento
+      const loadingMsg = document.createElement('div');
+      loadingMsg.className = 'loading-text';
+      loadingMsg.textContent = 'Aguarde um pouco...';
+      // Insere ANTES da estante, dentro do mesmo container (.main)
+      shelf.parentNode.insertBefore(loadingMsg, shelf);
+
+      // 3) Limpa qualquer conteúdo anterior da estante
+      shelf.innerHTML = '';
+
+      // 4) Gera os skeletons dentro da estante
       for (let i = 0; i < count; i++) {
         const sk = document.createElement('div');
-        sk.className = 'book skeleton';             // Aplica estilo de placeholder
+        sk.className = 'book skeleton';  // aplica proporção e animação
         shelf.appendChild(sk);
       }
     }
+
+
 
     // ===== Busca ID de pasta pelo nome (Google Drive) =====
     async function getFolderIdByName(parentId, folderName) {
@@ -643,11 +734,14 @@
     }
 
     // ===== Renderiza os livros na estante =====
-    async function renderBooks(defaultRoot = 'Livros') {
-      const shelf = document.getElementById('shelf');
-      const treeRoot = document.getElementById('filterTree');
-      showSkeletons();                              // 1) mostra placeholders
-      treeRoot.innerHTML = '';                       // limpa árvore antiga
+    async function renderBooks() {
+      const shelf = document.getElementById('shelf');       // Container dos cards
+      const treeRoot = document.getElementById('filterTree');  // Container da árvore de filtros
+
+      // 1) Exibe skeletons e mensagem de carregamento
+      showSkeletons();
+      // Limpa árvore antiga
+      treeRoot.innerHTML = '';
 
       try {
         // ===== 1) Carregamento e cache =====
@@ -655,11 +749,10 @@
         const cache = sessionStorage.getItem('estanteCache');
         if (cache) {
           const parsed = JSON.parse(cache);
-          const cacheValidoPorMs = 4 * 60 * 60 * 1000; // 4h em ms
-          const expirado = Date.now() - parsed.timestamp > cacheValidoPorMs;
-
+          const quatroHoras = 4 * 60 * 60 * 1000;
+          const expirado = Date.now() - parsed.timestamp > quatroHoras;
           if (!expirado) {
-            // Usa cache válido: arquivos e capas já armazenados
+            // Usa cache válido
             files = parsed.files.sort((a, b) =>
               a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
             );
@@ -670,54 +763,81 @@
         }
 
         if (!files) {
-          // Busca pastas e arquivos no Drive
+          // 1.1) Busca ID da pasta de capas
           const capaFolderId = await getFolderIdByName(folderId, capaFolderName);
           if (capaFolderId) {
             capasDrive = await listCapasRecursively(capaFolderId);
           }
+          // 1.2) Lista arquivos de texto
           files = await listFilesRecursively(folderId);
-          files.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
-
-          // Salva no sessionStorage
+          files.sort((a, b) =>
+            a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
+          );
+          // 1.3) Armazena no cache
           sessionStorage.setItem(
             'estanteCache',
             JSON.stringify({ files, capas: capasDrive, timestamp: Date.now() })
           );
         }
 
+        // ===== Remover mensagem de carregamento (fora da <div id="shelf">) =====
+        const loadingMsg = document.querySelector('.loading-text');
+        if (loadingMsg) loadingMsg.remove();
+
         // ===== 2) Criação dos cards =====
-        shelf.innerHTML = '';
+        shelf.innerHTML = '';  // Limpa skeletons e cards antigos
         const allPaths = [];
+
         for (const file of files) {
           const name = stripExtension(file.name);
           const nameNorm = name.toLowerCase();
           const path = file.path.replace(/\/$/, '');
           allPaths.push(path);
 
-          // Escolhe URL de capa: manual, thumbnail ou gerada
+          // Escolhe URL de capa
           const manualCover = capasDrive[nameNorm];
           const thumbCover = file.thumbnailLink;
           const coverUrl = manualCover || thumbCover || generateCoverDataUrl(name);
 
-          // Monta estrutura HTML do card
-          const bookDiv = document.createElement('div'); bookDiv.className = 'book';
+          // Monta card flip
+          const bookDiv = document.createElement('div');
+          bookDiv.className = 'book';
           bookDiv.dataset.path = path;
 
-          const flipCard = document.createElement('div'); flipCard.className = 'flip-card';
-          const flipInner = document.createElement('div'); flipInner.className = 'flip-inner';
+          const flipCard = document.createElement('div');
+          flipCard.className = 'flip-card';
+          const flipInner = document.createElement('div');
+          flipInner.className = 'flip-inner';
 
-          // Face frontal com imagem
-          const front = document.createElement('div'); front.className = 'flip-front';
+          // Face frontal (capa)
+          const front = document.createElement('div');
+          front.className = 'flip-front';
+
           const img = document.createElement('img');
-          img.loading = 'lazy'; img.src = coverUrl; img.alt = name;
+          img.loading = 'lazy';
+          img.src = coverUrl;
+          img.alt = name;
+
+          // Se falhar ao carregar, limpa e injeta o fallback
+          img.onerror = () => {
+            img.onerror = null;  // só uma tentativa
+            // gera capa com texto
+            img.src = generateCoverDataUrl(name, 400, 600);
+          };
+
+          // Se tudo der certo, apenas adiciona a imagem
           front.appendChild(img);
 
-          // Face traseira com título e botão de leitura
-          const back = document.createElement('div'); back.className = 'flip-back';
-          const bookTitle = document.createElement('div'); bookTitle.className = 'book-title';
+          // Face traseira (título + botão)
+          const back = document.createElement('div');
+          back.className = 'flip-back';
+          const bookTitle = document.createElement('div');
+          bookTitle.className = 'book-title';
           bookTitle.textContent = name;
-          const readButton = document.createElement('a'); readButton.className = 'read-button';
-          readButton.href = file.webViewLink; readButton.target = '_blank';
+          const readButton = document.createElement('a');
+          readButton.className = 'read-button';
+          readButton.href = file.webViewLink;
+          readButton.target = '_blank';
           readButton.textContent = 'Ler';
           back.append(bookTitle, readButton);
 
@@ -740,12 +860,15 @@
         wrapperUl.appendChild(wrapperLi);
         treeRoot.appendChild(wrapperUl);
 
-        // ===== 4) Aplica filtro inicial =====
-        filterBooks(defaultRoot);
+        // ===== 4) Aplica filtro inicial (sem checkbox marcado) =====
+        filterBooksMulti();
 
       } catch (err) {
         console.error("Erro ao carregar estante:", err);
-        shelf.innerHTML = "<p>Erro ao carregar arquivos.</p>";  // Mensagem de erro para o usuário
+        // Em caso de erro, remove a mensagem de carregamento e exibe aviso
+        const loadingMsg = document.querySelector('.loading-text');
+        if (loadingMsg) loadingMsg.remove();
+        shelf.innerHTML = "<p>Erro ao carregar arquivos.</p>";
       }
     }
 
@@ -758,6 +881,10 @@
       const sidebar = document.getElementById("sidebar");         // Painel lateral de filtros
       const closeBtn = document.getElementById("closeSidebar");    // Botão '×' para fechar a sidebar
       const filterTree = document.getElementById("filterTree");      // Elemento raiz da árvore de filtros
+
+      // associa os botões de Expandir / Recolher
+      document.getElementById("expandAllBtn").addEventListener("click", expandAll);
+      document.getElementById("collapseAllBtn").addEventListener("click", collapseAll);
 
       // ——— Flip único por vez em mobile ———
       shelf.addEventListener('click', e => {
